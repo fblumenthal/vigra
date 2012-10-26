@@ -25,6 +25,27 @@ def getClassListNew():
     classes_plus_namespace.sort(lambda a,b: cmp(a[1], b[1]))
     return classes_plus_namespace
 
+def getFunctionListNew():
+    text = open(path + "/tagfile_new.tag").read()
+    # all functions from compound "namespace", "file" and "group"
+    # -> do not include member functions from compound "class"
+    functions = re.findall(r'<compound kind="group">(.*?)</compound>',text,flags=re.DOTALL)
+    functions += re.findall(r'<compound kind="namespace">(.*?)</compound>',text,flags=re.DOTALL)
+    functions += re.findall(r'<compound kind="file">(.*?)</compound>',text,flags=re.DOTALL)
+
+    print functions[51]
+    print len(functions)
+
+    funcs = []
+    
+    func = re.findall(r'<member kind="function">.*?<name>(.*?)</name>.*?<anchorfile>(.*?)</anchorfile>.*?<anchor>(.*?)</anchor>.*?</member>',functions[50],flags=re.DOTALL)
+    
+    func += re.findall(r'<member kind="function">.*?<name>(.*?)</name>.*?<anchorfile>(.*?)</anchorfile>.*?<anchor>(.*?)</anchor>.*?</member>',functions[51],flags=re.DOTALL)
+
+    print func
+
+#    for f in functions:
+#        funcs += re.findall(r'.*?<member kind="function">.*?<name>(.*?)</name>.*?<anchorfile>(.*?)</anchorfile>.*?<anchor>(.*?)</anchor>.*?<\member>',f,flags=re.DOTALL)
     
 class_list = getClassListNew()
 
@@ -35,3 +56,4 @@ print class_list[-1]
 print class_list[0]
 print class_list[30]
     
+getFunctionListNew()
