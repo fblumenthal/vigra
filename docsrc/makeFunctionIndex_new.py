@@ -29,31 +29,70 @@ def getFunctionListNew():
     text = open(path + "/tagfile_new.tag").read()
     # all functions from compound "namespace", "file" and "group"
     # -> do not include member functions from compound "class"
-    functions = re.findall(r'<compound kind="group">(.*?)</compound>',text,flags=re.DOTALL)
-    functions += re.findall(r'<compound kind="namespace">(.*?)</compound>',text,flags=re.DOTALL)
-    functions += re.findall(r'<compound kind="file">(.*?)</compound>',text,flags=re.DOTALL)
 
-    print functions[51]
+    functions = re.findall(r'<compound kind="namespace">(.*?)</compound>',text,flags=re.DOTALL)
+
+    #do not need these!? dublicates!?
+       #functions += re.findall(r'<compound kind="group">(.*?)</compound>',text,flags=re.DOTALL)
+    #functions += re.findall(r'<compound kind="file">(.*?)</compound>',text,flags=re.DOTALL)
+
+    print functions[5]
     print len(functions)
 
     funcs = []
-    
-    func = re.findall(r'<member kind="function">.*?<name>(.*?)</name>.*?<anchorfile>(.*?)</anchorfile>.*?<anchor>(.*?)</anchor>.*?</member>',functions[50],flags=re.DOTALL)
-    
-    func += re.findall(r'<member kind="function">.*?<name>(.*?)</name>.*?<anchorfile>(.*?)</anchorfile>.*?<anchor>(.*?)</anchor>.*?</member>',functions[51],flags=re.DOTALL)
+ 
+    for f in functions:
+        funcs += re.findall(r'<member kind="function">.*?<name>(.*?)</name>.*?<anchorfile>(.*?)</anchorfile>.*?<anchor>(.*?)</anchor>.*?</member>',f,flags=re.DOTALL)
 
-    print func
+#    for f in functions:
+#        funcs += re.findall(r'<member kind="function">.*?<name>(.*?)</name>.*?<anchorfile>(.*?)</anchorfile>.*?<anchor>(.*?)</anchor>.*?</member>',f,flags=re.DOTALL)
+
+    function_list = []
+    for f in funcs:
+        function_list.append((f[1] + '#' + f[2], f[0]))
+   
+    print function_list[20]
+
+    function_list.sort(lambda a,b: cmp(a[1], b[1]))
+    return function_list
+
+   # funcs += re.findall(r'<member kind="function">.*?<name>(.*?)</name>.*?<anchorfile>(.*?)</anchorfile>.*?<anchor>(.*?)</anchor>.*?</member>',functions[50],flags=re.DOTALL)
+    
+    #funcs += re.findall(r'<member kind="function">.*?<name>(.*?)</name>.*?<anchorfile>(.*?)</anchorfile>.*?<anchor>(.*?)</anchor>.*?</member>',functions[51],flags=re.DOTALL)
+
+#    print funcs
 
 #    for f in functions:
 #        funcs += re.findall(r'.*?<member kind="function">.*?<name>(.*?)</name>.*?<anchorfile>(.*?)</anchorfile>.*?<anchor>(.*?)</anchor>.*?<\member>',f,flags=re.DOTALL)
     
+
+
 class_list = getClassListNew()
 
-for c in class_list:
-    print c[1]
+#for c in class_list:
+#    print c[1]
 
-print class_list[-1]
-print class_list[0]
-print class_list[30]
+#print class_list[-1]
+#print class_list[0]
+#print class_list[30]
     
-getFunctionListNew()
+function_list = getFunctionListNew()
+print function_list[0]
+print function_list[1]
+print function_list[2]
+print function_list[3]
+print function_list[4]
+print function_list[5]
+print function_list[6]
+print function_list[7]
+print function_list[8]
+print function_list[9]
+print function_list[10]
+print function_list[11]
+print function_list[12]
+print function_list[13]
+print function_list[14]
+print function_list[15]
+print function_list[16]
+
+print len(function_list)
