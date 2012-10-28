@@ -10,51 +10,54 @@ if len(sys.argv) != 2:
 
 path = str(sys.argv[1])
 
-def getClassList():
-    text = open(path + "/classes.html").read()
-    classList = re.findall(r'<a class="el" href="(class[^"]+\.html)">([^<&]+)*</a> \(<a class="el" href="namespace[^"]+">([^<]+)</a>\)', text)
-    classList.sort(lambda a,b: cmp(a[1], b[1]))
-    return classList
+def getClassListNew():
+    text = open(path + "/../../../vigra_build/docsrc/tagfile.tag").read()
+    # all classes except classes of global namespace
+    classes = re.findall(r'<compound kind="class">\n.*?<name>(.*?::.*?)</name>\n.*?<filename>(.*?)</filename>',text)
 
-def getNamespaceList():
-    text = open(path + "/namespaces.html").read()
-    return re.findall(r'<tr><td class="indexkey"><a class="el" href="([^"]+)">([^<]+)</a>', text)
+    classes_plus_namespace = [[None, None, None] for k in xrange(len(classes))]
 
-def getFunctionList(namespaceList):
-    functionList = []
-    for namespace in namespaceList:
-        text = open(path + '/' + namespace[0]).read()
-        # start of function section in the namespace file
-        start = re.search(r'<tr><td colspan="2">(?:<br>|)?<h2>(?:<a name="func-members"></a>\n)?Functions</h2></td></tr>', text)
-        if not start:
-            continue # no functions in this namespace
-        # end of function section in the namespace file
-        end = re.search(r'<tr><td colspan="2">(?:<br>)?<h2>(?:<a name="var-members"></a>\n)?Variables</h2></td></tr>', text)
-        if not end:
-            end = re.search(r'<hr/?><a name="_?details"[^>]*></a><h2[^>]*>Detailed Description</h2>', text)
-        # extract the function section from the namespace file
-        text = text[start.regs[0][0]:end.regs[0][0]]
-        
-        # split at the function signatures to get sections for each individual function
-        functionPieces = re.split(r'</a> \([^)]*\)</td></tr>', text)
-        for f in functionPieces:
-            # the rightmost hyperlink contains the function name and link address
-            f = f[f.rfind('<a class="el" href='):]
-            functionList += re.findall(r'<a class="el" href="([^"]+)">([^<]+)$', f)
+    for i in xrange(len(classes)):
+        classes_plus_namespace[i][0]=classes[i][1]        
+        classes_plus_namespace[i][1]=classes[i][0][classes[i][0].rfind('::')+2:]
+        classes_plus_namespace[i][2]=classes[i][0][:classes[i][0].rfind('::')]
+    
+    classes_plus_namespace.sort(lambda a,b: cmp(a[1], b[1]))
+    return classes_plus_namespace
+
+def getFunctionListNew():
+    text = open(path + "/../../../vigra_build/docsrc/tagfile.tag").read()
+    # all functions from compound "namespace", "file" and "group"
+    # -> do not include member functions from compound "class"
+    functions = re.findall(r'<compound kind="namespace">(.*?)</compound>',text,flags=re.DOTALL)
+
+    #do not need these!? dublicates!?
+    #functions += re.findall(r'<compound kind="group">(.*?)</compound>',text,flags=re.DOTALL)
+    #functions += re.findall(r'<compound kind="file">(.*?)</compound>',text,flags=re.DOTALL)
+
+    print functions[5]
+    print len(functions)
+
+    funcs = []
+ 
+    for f in functions:
+        funcs += re.findall(r'<member kind="function">.*?<name>(.*?)</name>.*?<anchorfile>(.*?)</anchorfile>.*?<anchor>(.*?)</anchor>.*?</member>',f,flags=re.DOTALL)
+
+    function_list = []
+    for f in funcs:
+        function_list.append((f[1] + '#' + f[2], f[0]))
 
     # add special documentation for argument object factories
     for k in ['srcImageRange', 'srcImage', 'destImageRange', 'destImage', 'maskImage']:
-        functionList.append(('group__ImageIterators.html#ImageBasedArgumentObjectFactories', k))
+        function_list.append(('group__ImageIterators.html#ImageBasedArgumentObjectFactories', k))
     for k in ['srcMultiArrayRange', 'srcMultiArray', 'destMultiArrayRange', 'destMultiArray']:
-        functionList.append(('group__ImageIterators.html#MultiArrayBasedArgumentObjectFactories', k))
+        function_list.append(('group__ImageIterators.html#MultiArrayBasedArgumentObjectFactories', k))
     for k in ['srcIterRange', 'srcIter', 'destIterRange', 'destIter', 'maskIter']:
-        functionList.append(('group__ImageIterators.html#IteratorBasedArgumentObjectFactories', k))
+        function_list.append(('group__ImageIterators.html#IteratorBasedArgumentObjectFactories', k))
 
-    functionList.sort(lambda a,b: cmp(a[1], b[1]))
-    
-    functionList = disambiguateOverloadedFunctions(functionList)
-
-    return functionList
+    function_list.sort(lambda a,b: cmp(a[1], b[1]))
+    function_list = disambiguateOverloadedFunctions(function_list)
+    return function_list
 
 def addHeading(index, initial):    
     index = index + '<p><a name="index_' + initial + \
@@ -83,7 +86,8 @@ def disambiguateOverloadedFunctions(functionList):
         functionList[i] = functionList[i] + (group,)
     
     return functionList
-    
+
+
 def generateFunctionIndex(functionList):
     index = ""
     initials = []
@@ -130,9 +134,10 @@ def generateFunctionIndex(functionList):
 
     open(path + "/functionindex.html", 'w+').write(text)
 
-classList = getClassList()
-namespaceList = getNamespaceList()
-functionList = getFunctionList(namespaceList)
+
+
+classList = getClassListNew()
+functionList = getFunctionListNew()
 generateFunctionIndex(functionList)
 
 # Export class and function list to c_api_replaces.txt for 
