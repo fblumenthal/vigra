@@ -493,9 +493,14 @@ int fftwPaddingSize(int s)
         97020, 97200, 97500, 98000, 98280, 98304, 98415, 98560, 98784, 99000, 
         99225, 99792, 99840 }; 
 
-    if(s <= 0 || s > goodSizes[size-1])
+    if(s <= 0 || s >= goodSizes[size-1])
         return s;
-    return *std::upper_bound(goodSizes, goodSizes+size, s, std::less_equal<int>());
+    // find the smallest padding size that is at least as large as 's'
+    int * upperBound = std::upper_bound(goodSizes, goodSizes+size, s);
+    if(upperBound > goodSizes && upperBound[-1] == s)
+        return s;
+    else
+        return *upperBound;
 }
 
 inline 
@@ -604,9 +609,14 @@ int fftwEvenPaddingSize(int s)
         96000, 96040, 96228, 96250, 96768, 97020, 97200, 97500, 98000, 98280, 
         98304, 98560, 98784, 99000, 99792, 99840 }; 
 
-    if(s <= 0 || s > goodSizes[size-1])
+    if(s <= 0 || s >= goodSizes[size-1])
         return s;
-    return *std::upper_bound(goodSizes, goodSizes+size, s, std::less_equal<int>());
+    // find the smallest padding size that is at least as large as 's'
+    int * upperBound = std::upper_bound(goodSizes, goodSizes+size, s);
+    if(upperBound > goodSizes && upperBound[-1] == s)
+        return s;
+    else
+        return *upperBound;
 }
 
 template <int M>

@@ -1309,7 +1309,10 @@ class Kernel1D
           norm_(norm)
         {}
 
-        ~InitProxy()
+        ~InitProxy() 
+#ifndef _MSC_VER
+             throw(PreconditionViolation)
+#endif
         {
             vigra_precondition(count_ == 1 || count_ == sum_,
                   "Kernel1D::initExplicitly(): "
@@ -1330,7 +1333,6 @@ class Kernel1D
                 ++iter_;
                 *iter_ = v;
             }
-
             return *this;
         }
 

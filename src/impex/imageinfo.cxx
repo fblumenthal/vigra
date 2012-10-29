@@ -472,27 +472,25 @@ ImageExportInfo & ImageExportInfo::setICCProfile(
 }
 
 // return an encoder for a given ImageExportInfo object
-std::auto_ptr<Encoder> encoder( const ImageExportInfo & info )
+VIGRA_UNIQUE_PTR<Encoder> encoder( const ImageExportInfo & info )
 {
-    std::auto_ptr<Encoder> enc;
+    VIGRA_UNIQUE_PTR<Encoder> enc;
 
     std::string filetype = info.getFileType();
     if ( filetype != "" ) {
         validate_filetype(filetype);
-        std::auto_ptr<Encoder> enc2
-            = getEncoder( std::string( info.getFileName() ), filetype, std::string( info.getMode() ) );
-        enc = enc2;
+        VIGRA_UNIQUE_PTR<Encoder> enc2 = getEncoder( std::string( info.getFileName() ), filetype, std::string( info.getMode() ) );
+        std::swap(enc, enc2);
     } else {
-        std::auto_ptr<Encoder> enc2
-            = getEncoder( std::string( info.getFileName() ), "undefined", std::string( info.getMode() ) );
-        enc = enc2;
+        VIGRA_UNIQUE_PTR<Encoder> enc2 = getEncoder( std::string( info.getFileName() ), "undefined", std::string( info.getMode() ) );
+        std::swap(enc, enc2);
     }
 
     std::string comp = info.getCompression();
     if ( comp != "" ) {
 
         // check for quality parameter of JPEG compression
-        int quality = -1;
+        int quality = 0;
 
         // possibility 1: quality specified as "JPEG QUALITY=N" or "JPEG-ARITH QUALITY=N"
         // possibility 2 (deprecated): quality specified as just a number "10"
@@ -507,7 +505,7 @@ std::auto_ptr<Encoder> encoder( const ImageExportInfo & info )
 
         std::istringstream compstream(comp.substr(start));
         compstream >> quality;
-        if ( quality != -1 )
+        if ( quality != 0 )
         {
             if(parsed_comp == "")
                 parsed_comp = "JPEG";
@@ -680,7 +678,7 @@ const ImageImportInfo::ICCProfile & ImageImportInfo::getICCProfile() const
 
 void ImageImportInfo::readHeader_()
 {
-    std::auto_ptr<Decoder> decoder = getDecoder(m_filename, "undefined", m_image_index);
+    VIGRA_UNIQUE_PTR<Decoder> decoder = getDecoder(m_filename, "undefined", m_image_index);
     m_num_images = decoder->getNumImages();
 
     m_filetype = decoder->getFileType();
@@ -700,7 +698,7 @@ void ImageImportInfo::readHeader_()
 }
 
 // return a decoder for a given ImageImportInfo object
-std::auto_ptr<Decoder> decoder( const ImageImportInfo & info )
+VIGRA_UNIQUE_PTR<Decoder> decoder( const ImageImportInfo & info )
 {
     std::string filetype = info.getFileType();
     validate_filetype(filetype);

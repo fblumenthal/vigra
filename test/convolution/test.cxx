@@ -280,6 +280,7 @@ struct ConvolutionTest
             std::string message(c.what());
             should(0 == expected.compare(message.substr(0,expected.size())));
         }
+
         try
         {
             k.initExplicitly(-1,1) = 1, 2, 3, 4;
