@@ -3,6 +3,7 @@
 import re
 import glob
 import sys
+import xml.etree.ElementTree as ET
 
 if len(sys.argv) != 2:
     print 'usage: python makeFunctionIndex.py directory'
@@ -10,42 +11,37 @@ if len(sys.argv) != 2:
 
 path = str(sys.argv[1])
 
-def getClassListNew():
-    text = open(path + "/../../../vigra_build/docsrc/tagfile.tag").read()
-    # all classes except classes of global namespace
-    classes = re.findall(r'<compound kind="class">\n.*?<name>(.*?::.*?)</name>\n.*?<filename>(.*?)</filename>',text)
 
-    classes_plus_namespace = [[None, None, None] for k in xrange(len(classes))]
+def getClassList():
+    tree = ET.parse(path + "/../../../vigra_build/docsrc/tagfile.tag")
+    root = tree.getroot()
 
-    for i in xrange(len(classes)):
-        classes_plus_namespace[i][0]=classes[i][1]        
-        classes_plus_namespace[i][1]=classes[i][0][classes[i][0].rfind('::')+2:]
-        classes_plus_namespace[i][2]=classes[i][0][:classes[i][0].rfind('::')]
-    
-    classes_plus_namespace.sort(lambda a,b: cmp(a[1], b[1]))
-    return classes_plus_namespace
+    class_list = []
+    for classes in root.findall("*[@kind='class']"):
+        long_name = classes.find('name').text
+        # only classes from vigra namespace
+        if long_name[0:5] == 'vigra':
+            html = classes.find('filename').text
+            short_name = long_name[long_name.rfind('::')+2:]
+            namespace = long_name[:long_name.rfind('::')]
+            class_list.append([html, short_name, namespace])
 
-def getFunctionListNew():
-    text = open(path + "/../../../vigra_build/docsrc/tagfile.tag").read()
-    # all functions from compound "namespace", "file" and "group"
-    # -> do not include member functions from compound "class"
-    functions = re.findall(r'<compound kind="namespace">(.*?)</compound>',text,flags=re.DOTALL)
+    class_list.sort(lambda a,b: cmp(a[1], b[1]))
+    return class_list
 
-    #do not need these!? dublicates!?
-    #functions += re.findall(r'<compound kind="group">(.*?)</compound>',text,flags=re.DOTALL)
-    #functions += re.findall(r'<compound kind="file">(.*?)</compound>',text,flags=re.DOTALL)
 
-    print functions[5]
-    print len(functions)
 
-    funcs = []
- 
-    for f in functions:
-        funcs += re.findall(r'<member kind="function">.*?<name>(.*?)</name>.*?<anchorfile>(.*?)</anchorfile>.*?<anchor>(.*?)</anchor>.*?</member>',f,flags=re.DOTALL)
+def getFunctionList():
+    tree = ET.parse(path + "/../../../vigra_build/docsrc/tagfile.tag")
+    root = tree.getroot()
 
     function_list = []
-    for f in funcs:
-        function_list.append((f[1] + '#' + f[2], f[0]))
+    for function in root.findall("*[@kind='namespace']/*[@kind='function']"):
+        name = function.find('name').text
+        anchorfile = function.find('anchorfile').text
+        anchor = function.find('anchor').text
+        html = anchorfile + '#' + anchor
+        function_list.append((html, name))
 
     # add special documentation for argument object factories
     for k in ['srcImageRange', 'srcImage', 'destImageRange', 'destImage', 'maskImage']:
@@ -135,9 +131,8 @@ def generateFunctionIndex(functionList):
     open(path + "/functionindex.html", 'w+').write(text)
 
 
-
-classList = getClassListNew()
-functionList = getFunctionListNew()
+classList = getClassList()
+functionList = getFunctionList()
 generateFunctionIndex(functionList)
 
 # Export class and function list to c_api_replaces.txt for 
