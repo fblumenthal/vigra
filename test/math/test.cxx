@@ -268,8 +268,8 @@ struct SplineTest
     void testWeightMatrix()
     {
         int n = ORDER + 1;
-        typename BS::WeightMatrix & ws = BS::weights();
-        typename BSB::WeightMatrix & wsb = BSB::weights();
+        typename BS::WeightMatrix const & ws = BS::weights();
+        typename BSB::WeightMatrix const & wsb = BSB::weights();
 
         for(int d = 0; d < n; ++d)
             for(int i = 0; i < n; ++i)
@@ -420,6 +420,9 @@ struct FunctionsTest
             shouldEqualTolerance(vigra::sin_pi(x), std::sin(M_PI*x), 1e-14);
             shouldEqualTolerance(vigra::cos_pi(x), std::cos(M_PI*x), 1e-14);
         }
+
+        shouldEqualTolerance(vigra::sin_pi(0.25), 0.5*M_SQRT2, 2e-16);
+        shouldEqualTolerance(vigra::cos_pi(0.25), 0.5*M_SQRT2, 2e-16);
 
         shouldEqual(vigra::gamma(4.0), 6.0);
         shouldEqualTolerance(vigra::gamma(0.1), 9.5135076986687306, 1e-15);
@@ -2639,22 +2642,22 @@ struct RandomTest
             2.57671, 0.0299117, 0.471425, 1.59464, 1.37346};
 
         vigra::RandomTT800 random1;
-        vigra::UniformRandomFunctor<> f1(random1);
+        vigra::UniformRandomFunctor<vigra::RandomTT800> f1(random1);
         for(unsigned int k=0; k<n; ++k)
             should(vigra::abs(f1() - fref[k]) < 2e-6);
 
         vigra::RandomTT800 random2;
-        vigra::UniformIntRandomFunctor<> f2(4, 34, random2, true);
+        vigra::UniformIntRandomFunctor<vigra::RandomTT800> f2(4, 34, random2, true);
         for(unsigned int k=0; k<n; ++k)
             shouldEqual(f2(), iref[k] % 31 + 4);
 
         vigra::RandomTT800 random3;
-        vigra::UniformIntRandomFunctor<> f3(random3);
+        vigra::UniformIntRandomFunctor<vigra::RandomTT800> f3(random3);
         for(unsigned int k=0; k<n; ++k)
             shouldEqual(f3(32), iref[k] % 32);
 
         vigra::RandomTT800 random4;
-        vigra::NormalRandomFunctor<> f4(random4);
+        vigra::NormalRandomFunctor<vigra::RandomTT800> f4(random4);
         for(unsigned int k=0; k<n; ++k)
             shouldEqualTolerance(f4(), nref[k], 1e-5);
     }
