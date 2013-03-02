@@ -1,0 +1,1 @@
+VIGRA_ADD_TEST(test_slic2d test.cxx LIBRARIES vigraimpex)
