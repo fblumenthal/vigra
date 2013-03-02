@@ -44,7 +44,6 @@
 #include <stdlib.h>
 #include <time.h>
 
-
 using namespace vigra;
 struct Slic2dTest
 {
