@@ -36,19 +36,27 @@
 #include <iostream>
 #include <functional>
 #include <cmath>
-#include "unittest.hxx"
-
-
-#include "list"
-
 #include <stdlib.h>
 #include <time.h>
+
+#include "unittest.hxx"
+#include "list"
+
+#include "vigra/slic.hxx"
+#include "vigra/impex.hxx"
+
 
 using namespace vigra;
 struct Slic2dTest
 {
+    ImageImportInfo info;
+    int w, h;
+    FImage lennaImage;
 
     Slic2dTest()
+    :   info("lenna.xv"),
+        w(info.width()), h(info.height()),
+        lennaImage(w, h)
     {
        //
     }
