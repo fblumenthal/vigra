@@ -58,10 +58,11 @@ namespace vigra{
         SlicSeed():coordinates_(),radius_(){
 
         }
-        SlicSeed(vigra::TinyVector<int , 2> & coordinates, const int radius)
+        SlicSeed(const vigra::TinyVector<int , 2> & coordinates, const int radius)
         :   coordinates_(coordinates),
             radius_(radius){
         }
+
         // Generate Operators via macro (GET RIDE OF THIS!!!)
         #define SLIC_SEED_OP_GEN_MACRO( OP,IMPL_OP) \
         bool operator OP (const SlicSeed & other){ \

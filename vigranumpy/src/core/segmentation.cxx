@@ -877,7 +877,9 @@ pythonSlicSuperpixels(  NumpyArray<2, PixelType > image,
     return res;
 }
 
-
+inline python::tuple coorinateToTuple(const SlicSeed & seed){
+    return python::make_tuple(seed.coordinates_[0],seed.coordinates_[1]);
+}
 
 void defineSegmentation()
 {
@@ -886,7 +888,10 @@ void defineSegmentation()
     docstring_options doc_options(true, true, false);
 
 
-    python::class_<SlicSeed>("SlicSeed",init<>())
+    python::class_<SlicSeed>("SlicSeed",init< TinyVector<int,2> , const int >(  (arg("coordinate")=python::make_tuple(0,0),arg("r")=0)  ))
+    //.def_readwrite("coordinate", &SlicSeed::coordinates_)
+    .add_property("coordinate", & coorinateToTuple, &SlicSeed::coordinates_)
+    .def_readwrite("r",&SlicSeed::radius_)
     ;
 
     /*
