@@ -18,7 +18,7 @@ namespace vigra{
         std::vector<SlicSeed>               &  seeds,
         const SlicSeedOptions               &  options 
     ){
-        generateSlicSeedsImpl(boundaryIndicatorImage,seeds,options);
+        generateSlicSeedsImpl <const BOUNDARY_INDICATOR_IMAGE & >( boundaryIndicatorImage,seeds,options);
     }
 
 
@@ -31,7 +31,7 @@ namespace vigra{
         LABEL_IMAGE_TYPE  &             labelImage,
         const SlicOptions &             parameter
     ){
-        Slic< DATA_IMAGE_TYPE,LABEL_IMAGE_TYPE> slic( dataImage,seeds,labelImage,parameter);
+        Slic< const DATA_IMAGE_TYPE & ,LABEL_IMAGE_TYPE & > slic( dataImage,seeds,labelImage,parameter);
     }
 
 }

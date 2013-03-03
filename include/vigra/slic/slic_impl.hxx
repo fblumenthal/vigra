@@ -41,13 +41,14 @@ public:
     // 
     typedef DATA_IMAGE                          DataImageType;
     typedef LABEL_IMAGE                         LabelImageType; 
-    // Pixel type might be a tiny vector or a fundamental type
-    typedef typename detail_slic::RemoveConstIfConst<typename DataImageType::value_type>::Type  PixelType;
-    typedef typename LabelImageType::value_type LabelType;
     // META-programing to get type information
+    typedef typename detail_slic::GetValueType<DataImageType>::Type MaybeConstPixelType;
+    typedef typename detail_slic::RemoveConstIfConst<MaybeConstPixelType>::Type PixelType;
+    typedef typename detail_slic::GetValueType<LabelImageType>::Type MaybeConstLabelType;
+    typedef typename detail_slic::RemoveConstIfConst<MaybeConstLabelType>::Type LabelType;
     typedef typename vigra::NumericTraits<PixelType>::RealPromote RealPromotePixelType;
-    typedef typename vigra::NumericTraits<PixelType>::ValueType   ValueType;
-    typedef vigra::TinyVector<ValueType,2>                        SpatialCoordinateType;
+    typedef typename vigra::NumericTraits<PixelType>::ValueType ValueType;
+    typedef vigra::TinyVector<ValueType,2> SpatialCoordinateType;
     // Shape
     typedef vigra::TinyVector<int,2> ShapeType;
     //typedef vigra::TinyVector<int,2> ShapeType;
@@ -64,7 +65,7 @@ public:
         SpatialCoordinateType   spatial_;
     };
 
-    Slic(const DataImageType & dataImage, const std::vector<SlicSeed> seeds, LabelImageType & labelImage,const OptionsType & options=OptionsType()  );
+    Slic(DataImageType dataImage, const std::vector<SlicSeed> & seeds, LabelImageType labelImage,const OptionsType & options=OptionsType()  );
     void initializeCenters();
     
     template<class COORDINATE_VALUE_TYPE>
@@ -79,16 +80,16 @@ public:
 private:
     typedef vigra::MultiArray<2,ValueType>  DistanceImageType;
 
-    const DataImageType &           dataImage_;
-    LabelImageType &                labelImage_;
+    DataImageType                   dataImage_;
+    LabelImageType                  labelImage_;
     const std::vector<SlicSeed> &   seeds_;
     const OptionsType               options_;
     vigra::MultiArray<2,LabelType>  tmpLabelImage_;
+    DistanceImageType               distance_;
+    const ShapeType                 shape_;
     std::vector<CenterPosition>     centers_;
     std::vector<size_t>             clusterSize_;
-    DistanceImageType               distance_;
     const size_t                    k_;
-    const ShapeType                 shape_;
     const ValueType                 mm_;
 };
 
@@ -104,18 +105,18 @@ private:
 template<class DATA_IMAGE ,class LABEL_IMAGE >
 Slic<DATA_IMAGE,LABEL_IMAGE>::Slic(
 
-    const typename Slic<DATA_IMAGE,LABEL_IMAGE>::DataImageType &        dataImage, 
-    const std::vector<SlicSeed>                                         seeds,
-    typename Slic<DATA_IMAGE,LABEL_IMAGE>::LabelImageType &             labelImage,
+    Slic<DATA_IMAGE,LABEL_IMAGE>::DataImageType                         dataImage, 
+    const std::vector<SlicSeed> &                                       seeds,
+    Slic<DATA_IMAGE,LABEL_IMAGE>::LabelImageType                        labelImage,
     const typename Slic<DATA_IMAGE,LABEL_IMAGE>::OptionsType &          options 
 )
 :   dataImage_(dataImage),
-    seeds_(seeds),
     labelImage_(labelImage),
+    seeds_(seeds),
     options_(options),
-    tmpLabelImage_(ShapeType( dataImage.width(),dataImage.height())),
-    distance_( ShapeType( dataImage.width( ),dataImage.height()  )),
-    shape_(dataImage.width(),dataImage.height()),
+    tmpLabelImage_(ShapeType( dataImage.shape(0),dataImage.shape(1))),
+    distance_( ShapeType( dataImage.shape(0),dataImage.shape(1)  )),
+    shape_(dataImage.shape(0),dataImage.shape(1)),
     centers_(seeds.size()),
     clusterSize_(seeds.size()),
     k_(seeds.size()),
@@ -133,7 +134,7 @@ Slic<DATA_IMAGE,LABEL_IMAGE>::Slic(
         // update which pixels gets assigned to which cluster
         const ValueType err2=this->updateAssigments();
         // update the mean
-        this->updateMeans(centers_,clusterSize_,k_);
+        this->updateMeans();//centers_,clusterSize_,k_);
         // convergence?
         if(err2+std::numeric_limits<ValueType>::epsilon()>=err){
             break;

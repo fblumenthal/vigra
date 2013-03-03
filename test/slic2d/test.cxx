@@ -44,6 +44,7 @@
 
 #include "vigra/slic.hxx"
 #include "vigra/impex.hxx"
+#include <vigra/convolution.hxx>
 
 
 using namespace vigra;
@@ -63,7 +64,12 @@ struct Slic2dTest
 
     void test_seeding()
     {    
-        //
+        std::vector< vigra::SlicSeed > seedVector;
+        vigra::SlicSeedOptions seedingOptions(10,1);
+        // get grad mag image
+        FImage gradMag(w,h);
+        vigra::gaussianGradientMagnitude(vigra::srcImageRange(lennaImage),vigra::destImage(gradMag),3.0);
+        vigra::generateSlicSeeds(gradMag,seedVector,seedingOptions);
     }
     void test_slic()
     {    

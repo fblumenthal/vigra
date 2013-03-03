@@ -76,7 +76,17 @@ def checkAboutSame(i1,i2):
     compare_shapes(i1.shape, i2.shape)
     difference=np.sum(np.abs(i1-i2))/float(np.size(i1))
     assert(difference<5)
-    
+
+def test_slic():
+    # get seeds from gradMag
+    gradMag=vigra.filters.gaussianGradientMagnitude(img_rgb_f,3.0)
+    seeds=vigra.analysis.slicSeeds(gradMag,k=100,r=1)
+    opt=vigra.analysis.SlicOptions()
+    labels=vigra.analysis.slicSuperpixels(img_rgb_f,seeds,opt)
+
+    assert np.max(labels) > 80
+
+
 def test_watersheds():
 
     res = watershedsUnionFind(img_scalar_f)

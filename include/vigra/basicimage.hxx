@@ -590,6 +590,9 @@ class BasicImage
       height_(0)
     {}
 
+
+
+
         /** construct image of size 0x0, use the specified allocator.
         */
     explicit BasicImage(Alloc const & alloc)
@@ -835,6 +838,21 @@ class BasicImage
 
         /** width of Image
         */
+
+
+    int shape(const size_t d)const{
+        if(d==0){
+            return width_;
+        }
+        else if(d==1){
+            return height_;
+        }
+        else{
+            // trow error (todo)
+            return 0;
+        }
+    }
+
     int width() const
     {
         return width_;

@@ -29,8 +29,27 @@ namespace vigra{
         struct RemoveConstIfConst<const T>{
             typedef T Type;
         };
+
+
+
+        template<class T>
+        struct GetValueType{
+            typedef typename T::value_type Type;
+        };
+
+        template<class T>
+        struct GetValueType<const T &>{
+            typedef typename T::value_type Type;
+        };
+
+        template<class T>
+        struct GetValueType<T &>{
+            typedef typename T::value_type Type;
+        };
     }
 
+    struct SlicSeed;
+    typedef std::vector<SlicSeed> SlicSeedVector;
 
     // struct which holds a seed and the search radius / catchment area
     // of each seed (in this version it is not used that each seed could have a 
@@ -83,16 +102,22 @@ namespace vigra{
     // move slic seeds to a minima of the boundary indicator image (gradient-magnitude)
     template<class BOUNDARY_INDICATOR_IMAGE>
     void generateSlicSeedsImpl(
-        const BOUNDARY_INDICATOR_IMAGE &  boundaryIndicatorImage,
-        std::vector<SlicSeed>          &  seeds,
-        const SlicSeedOptions          &  options 
+        BOUNDARY_INDICATOR_IMAGE boundaryIndicatorImage,
+        std::vector<SlicSeed>  &   seeds,
+        const SlicSeedOptions  & options 
     ){
         typedef vigra::TinyVector<int , 2>                  CoordinateType;
         typedef BOUNDARY_INDICATOR_IMAGE                    BoundaryIndicatorImage;
-        typedef typename detail_slic::RemoveConstIfConst<typename BoundaryIndicatorImage::value_type>::Type ValueType;
+
+
+        typedef typename detail_slic::GetValueType<BOUNDARY_INDICATOR_IMAGE>::Type MaybeConstValueType;
+        typedef typename detail_slic::RemoveConstIfConst<MaybeConstValueType>::Type ValueType;
 
         seeds.clear();
-        int shape[]={boundaryIndicatorImage.shape(0),boundaryIndicatorImage.shape(1)};
+        int shape[]={
+            static_cast<int>(boundaryIndicatorImage.shape(0)),
+            static_cast<int>(boundaryIndicatorImage.shape(1))
+        };
         int seedDist=int(     std::sqrt(float(shape[0]*shape[1])/options.k_)  + 0.5f);
         //std::cout<<"seed dist "<<seedDist<<"\n";
         std::set<size_t> usedCenters;
@@ -101,7 +126,7 @@ namespace vigra{
         for(cCoord[1] = 0; cCoord[1] < shape[1]; cCoord[1] += seedDist)
         for(cCoord[0] = 0; cCoord[0] < shape[0]; cCoord[0] += seedDist){
             // find min. gradient position in a window  of r
-            bool foundCenterPosition=false;
+            //bool foundCenterPosition=false;
             ValueType minGrad=std::numeric_limits<ValueType>::infinity();
             // window limits
             for(size_t d=0;d<2;++d){
@@ -117,7 +142,7 @@ namespace vigra{
                     const size_t key=searchCoord[0]+searchCoord[1]*shape[0];
                     // check if center position  is unused
                     if(usedCenters.find(key)==usedCenters.end()){
-                        foundCenterPosition=true;
+                        //foundCenterPosition=true;
                         minGrad=grad;
                         minCoord=searchCoord;
                     }

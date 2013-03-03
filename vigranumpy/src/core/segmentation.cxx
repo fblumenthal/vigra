@@ -46,6 +46,11 @@
 #include <vigra/watersheds3d.hxx>
 #include <vigra/seededregiongrowing3d.hxx>
 
+// for slic
+#include <vigra/slic.hxx>
+#include <boost/python/suite/indexing/vector_indexing_suite.hpp>
+
+
 #include <string>
 #include <cmath>
 
@@ -834,11 +839,96 @@ pythonWatersheds3D(NumpyArray<3, Singleband<PixelType> > image,
 
 VIGRA_PYTHON_MULTITYPE_FUNCTOR(pywatersheds3D, pythonWatersheds3D)
 
+
+
+template < class PixelType>
+SlicSeedVector * 
+pythonSlicSeeds(    NumpyArray<2,Singleband<PixelType> > boundaryIndicatorImage,
+                    int k,
+                    int r) 
+{
+    SlicSeedVector * seeds=new SlicSeedVector();
+    SlicSeedOptions seedingOptions(k,r);
+    generateSlicSeedsImpl(boundaryIndicatorImage,*seeds,seedingOptions);
+    return seeds;
+}
+
+
+
+
+template<class PixelType>
+NumpyAnyArray
+pythonSlicSuperpixels(  NumpyArray<2, PixelType > image,
+                        const SlicSeedVector & seeds,
+                        const SlicOptions & slicOptions,
+                        NumpyArray<2, Singleband<npy_uint32> > res = NumpyArray<2, Singleband<npy_uint32> >())
+{
+
+    // reshape res?
+    std::string description("slic labeling");
+    res.reshapeIfEmpty(image.taggedShape().setChannelDescription(description), 
+            "watersheds(): Output array has wrong shape.");
+
+    Slic< 
+        NumpyArray<2, PixelType > ,
+        NumpyArray<2, Singleband<npy_uint32> >
+    > slic( image,seeds,res,slicOptions);
+
+    return res;
+}
+
+
+
 void defineSegmentation()
 {
     using namespace python;
     
     docstring_options doc_options(true, true, false);
+
+
+    python::class_<SlicSeed>("SlicSeed",init<>())
+    ;
+
+    /*
+    struct SlicOptions{
+    SlicOptions(
+        const double m=10.0,
+        const size_t iterations=40,
+        const size_t sizeLimit=4
+    ):
+    m_(m),
+    iterations_(iterations),
+    sizeLimit_(sizeLimit){
+    }
+    const double m_;
+    const size_t iterations_;
+    const size_t sizeLimit_;
+    };
+    */
+
+    python::class_<SlicOptions>("SlicOptions",init<const double,const size_t,const size_t>( ( arg("m")=10.0,arg("iterations")=40,arg("sizeLimit")=4) ,"SlicOptions constructor" ) )
+    ;
+
+    python::class_<SlicSeedVector>("SlicSeedVector",init<>())
+        .def(vector_indexing_suite<SlicSeedVector >())
+    ;
+
+    python::def("slicSeeds", registerConverters(&pythonSlicSeeds<float>),python::return_value_policy<python::manage_new_object>() ,
+        (arg("image"), 
+        arg("k"),
+        arg("r")=1),
+        "Generate a vector holding the slic seeds");
+
+
+    python::def("slicSuperpixels", registerConverters(&pythonSlicSuperpixels< TinyVector<float,3> >) ,
+        (arg("image"), 
+        arg("seeds"),
+        arg("options")=SlicOptions(),
+        arg("out")=python::object()),
+        " generate slic superpixels");
+
+
+
 
     multidef("labelImage", pyLabelImage<npy_uint8, float>(),
         (arg("image"), 
