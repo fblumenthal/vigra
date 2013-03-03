@@ -8,7 +8,6 @@
 #include <vigra/labelimage.hxx>
 #include <vigra/imageiteratoradapter.hxx>
 #include <iostream>
-#include <map>
 #include <assert.h>
 #include <vigra/copyimage.hxx>
 #include <vigra/numerictraits.hxx>
@@ -120,7 +119,7 @@ Slic<DATA_IMAGE,LABEL_IMAGE>::Slic(
     centers_(seeds.size()),
     clusterSize_(seeds.size()),
     k_(seeds.size()),
-    mm_(pow2(static_cast<ValueType>(options_.m_)))
+    mm_(static_cast<ValueType>(options_.m_*options_.m_))
 {
     // initialize distance and labels
     std::fill(labelImage_.begin(),labelImage_.end(),static_cast<LabelType>(0));
@@ -155,7 +154,7 @@ Slic<DATA_IMAGE,LABEL_IMAGE>::Slic(
 }
 
 template<class DATA_IMAGE ,class LABEL_IMAGE >
-void 
+inline void 
 Slic<DATA_IMAGE,LABEL_IMAGE>::initializeCenters(){
     for(size_t centerIndex=0;centerIndex<k_;++centerIndex){
         centers_[centerIndex].spatial_=seeds_[centerIndex].coordinates_;
@@ -199,7 +198,7 @@ Slic<DATA_IMAGE,LABEL_IMAGE>::updateAssigments(){
 
 template<class DATA_IMAGE ,class LABEL_IMAGE >
 template<class COORDINATE_VALUE_TYPE>
-void 
+inline void 
 Slic<DATA_IMAGE,LABEL_IMAGE>::getWindowLimits
 (
     const vigra::TinyVector<COORDINATE_VALUE_TYPE,2> &  centerCoord,
@@ -248,7 +247,7 @@ Slic<DATA_IMAGE,LABEL_IMAGE>::updateMeans(
 }
 
 template<class DATA_IMAGE ,class LABEL_IMAGE >
-typename Slic<DATA_IMAGE,LABEL_IMAGE>::ValueType 
+inline typename Slic<DATA_IMAGE,LABEL_IMAGE>::ValueType 
 Slic<DATA_IMAGE,LABEL_IMAGE>::distance(
     const size_t                         centerIndex,
     const vigra::TinyVector<int,2> &     pixelCoord
@@ -257,7 +256,7 @@ Slic<DATA_IMAGE,LABEL_IMAGE>::distance(
     // SLIC costs
     const ValueType spatialDist   = vigra::squaredNorm(centers_[centerIndex].spatial_-pixelCoord);
     const ValueType colorDist     = vigra::squaredNorm(centers_[centerIndex].color_-dataImage_(pixelCoord[0],pixelCoord[1]));
-    const ValueType normalization = pow2(static_cast<ValueType>(seeds_[centerIndex].radius_));
+    const ValueType normalization = static_cast<ValueType>(seeds_[centerIndex].radius_*seeds_[centerIndex].radius_);
     // FINAL COST
     return  colorDist + (spatialDist/normalization)*mm_;
 }
@@ -354,8 +353,5 @@ Slic<DATA_IMAGE,LABEL_IMAGE>::postProcessing(){
         return 0;
     return blocked;
 }
-
-
-
 
 } // end namespace vigra

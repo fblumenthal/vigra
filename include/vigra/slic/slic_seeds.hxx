@@ -29,9 +29,6 @@ namespace vigra{
         struct RemoveConstIfConst<const T>{
             typedef T Type;
         };
-
-
-
         template<class T>
         struct GetValueType{
             typedef typename T::value_type Type;
@@ -56,30 +53,21 @@ namespace vigra{
     // different catchment area)
     struct SlicSeed{
         SlicSeed():coordinates_(),radius_(){
-
         }
         SlicSeed(const vigra::TinyVector<int , 2> & coordinates, const int radius)
         :   coordinates_(coordinates),
             radius_(radius){
         }
-
-        // Generate Operators via macro (GET RIDE OF THIS!!!)
-        #define SLIC_SEED_OP_GEN_MACRO( OP,IMPL_OP) \
-        bool operator OP (const SlicSeed & other){ \
-            if(radius_ IMPL_OP other.radius_)                   return false; \
-            if(coordinates_[0] IMPL_OP other.coordinates_[0])   return false; \
-            if(coordinates_[1] IMPL_OP other.coordinates_[1])   return false; \
-            return true; \
+        // This is need for vector index suite of boost python 
+        bool operator == (const SlicSeed & other){ 
+            if(coordinates_[0] != other.coordinates_[0])   return false; 
+            if(coordinates_[1] != other.coordinates_[1])   return false; 
+            return true; 
         } 
-        SLIC_SEED_OP_GEN_MACRO( == , != );
-        SLIC_SEED_OP_GEN_MACRO( <  , >= );
-        SLIC_SEED_OP_GEN_MACRO( <= , >  );
-        SLIC_SEED_OP_GEN_MACRO( >  , <= );
-        SLIC_SEED_OP_GEN_MACRO( >= , <  );
-        #undef SLIC_SEED_OP_GEN_MACRO
-        
+    
         vigra::TinyVector<int , 2> coordinates_;
         int radius_;
+
     };
 
     // struct which holds the options for seed-generation
@@ -94,11 +82,6 @@ namespace vigra{
         const int r_;
     };
 
-    // pow2
-    template<class T>
-    inline T pow2(const T value){
-        return value*value;
-    }
 
     // move slic seeds to a minima of the boundary indicator image (gradient-magnitude)
     template<class BOUNDARY_INDICATOR_IMAGE>
@@ -143,6 +126,7 @@ namespace vigra{
                     const size_t key=searchCoord[0]+searchCoord[1]*shape[0];
                     // check if center position  is unused
                     if(usedCenters.find(key)==usedCenters.end()){
+                        usedCenters.insert(key);
                         //foundCenterPosition=true;
                         minGrad=grad;
                         minCoord=searchCoord;

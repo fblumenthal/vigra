@@ -22,7 +22,6 @@ namespace vigra{
     }
 
 
-    // BasicImage<RGBValue< ....> >
     template< class DATA_IMAGE_TYPE,class LABEL_IMAGE_TYPE>
     inline void 
     slicSuperpixels(
