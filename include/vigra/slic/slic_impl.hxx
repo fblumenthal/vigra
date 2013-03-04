@@ -34,7 +34,7 @@ struct SlicOptions{
 
 
 
-template<class DATA_IMAGE ,class LABEL_IMAGE >
+template<class DATA_IMAGE ,class LABEL_IMAGE ,int DIM=2>
 class Slic{
 public: 
     // 
@@ -64,7 +64,7 @@ public:
         SpatialCoordinateType   spatial_;
     };
 
-    Slic(DataImageType dataImage, const std::vector<SlicSeed> & seeds, LabelImageType labelImage,const OptionsType & options=OptionsType()  );
+    Slic(DataImageType dataImage, const std::vector<SlicSeed<2> > & seeds, LabelImageType labelImage,const OptionsType & options=OptionsType()  );
     void initializeCenters();
     
     template<class COORDINATE_VALUE_TYPE>
@@ -81,7 +81,7 @@ private:
 
     DataImageType                   dataImage_;
     LabelImageType                  labelImage_;
-    const std::vector<SlicSeed> &   seeds_;
+    const std::vector<SlicSeed<2> > &   seeds_;
     const OptionsType               options_;
     vigra::MultiArray<2,LabelType>  tmpLabelImage_;
     DistanceImageType               distance_;
@@ -94,20 +94,13 @@ private:
 
 
 
+template<class DATA_IMAGE ,class LABEL_IMAGE ,int DIM >
+Slic<DATA_IMAGE,LABEL_IMAGE,DIM>::Slic(
 
-
-
-
-
-
-
-template<class DATA_IMAGE ,class LABEL_IMAGE >
-Slic<DATA_IMAGE,LABEL_IMAGE>::Slic(
-
-    Slic<DATA_IMAGE,LABEL_IMAGE>::DataImageType                         dataImage, 
-    const std::vector<SlicSeed> &                                       seeds,
-    Slic<DATA_IMAGE,LABEL_IMAGE>::LabelImageType                        labelImage,
-    const typename Slic<DATA_IMAGE,LABEL_IMAGE>::OptionsType &          options 
+    Slic<DATA_IMAGE,LABEL_IMAGE,DIM>::DataImageType                         dataImage, 
+    const std::vector<SlicSeed<2> > &                                       seeds,
+    Slic<DATA_IMAGE,LABEL_IMAGE,DIM>::LabelImageType                        labelImage,
+    const typename Slic<DATA_IMAGE,LABEL_IMAGE,DIM>::OptionsType &          options 
 )
 :   dataImage_(dataImage),
     labelImage_(labelImage),
@@ -153,18 +146,18 @@ Slic<DATA_IMAGE,LABEL_IMAGE>::Slic(
     vigra::copyImage(vigra::srcImageRange(tmpLabelImage_), vigra::destImage(labelImage_));
 }
 
-template<class DATA_IMAGE ,class LABEL_IMAGE >
+template<class DATA_IMAGE ,class LABEL_IMAGE ,int DIM >
 inline void 
-Slic<DATA_IMAGE,LABEL_IMAGE>::initializeCenters(){
+Slic<DATA_IMAGE,LABEL_IMAGE,DIM>::initializeCenters(){
     for(size_t centerIndex=0;centerIndex<k_;++centerIndex){
         centers_[centerIndex].spatial_=seeds_[centerIndex].coordinates_;
         centers_[centerIndex].color_=dataImage_(seeds_[centerIndex].coordinates_[0],seeds_[centerIndex].coordinates_[1]);
     }
 }
 
-template<class DATA_IMAGE ,class LABEL_IMAGE >
-typename Slic<DATA_IMAGE,LABEL_IMAGE>::ValueType 
-Slic<DATA_IMAGE,LABEL_IMAGE>::updateAssigments(){
+template<class DATA_IMAGE ,class LABEL_IMAGE ,int DIM >
+typename Slic<DATA_IMAGE,LABEL_IMAGE,DIM>::ValueType 
+Slic<DATA_IMAGE,LABEL_IMAGE,DIM>::updateAssigments(){
     std::fill(distance_.begin(),distance_.end(),std::numeric_limits<ValueType>::infinity());
     std::fill(labelImage_.begin(),labelImage_.end(),0);
     for(size_t c=0;c<k_;++c){
@@ -172,15 +165,14 @@ Slic<DATA_IMAGE,LABEL_IMAGE>::updateAssigments(){
         // get window limits
         this->getWindowLimits(centers_[c].spatial_,startCoord,endCoord,seeds_[c].radius_);
         // => only pixels within the radius/searchSize of a cluster can be assigned to a cluster
-        for(pixelCoord[1]=startCoord[1]; pixelCoord[1]<endCoord[1]; ++pixelCoord[1]){
-            for(pixelCoord[0]=startCoord[0]; pixelCoord[0]<endCoord[0]; ++pixelCoord[0]){
-                // compute distance between cluster center and pixel
-                ValueType dist=this->distance(c,pixelCoord);
-                // update label?
-                if(dist<=distance_(pixelCoord[0],pixelCoord[1])){
-                    labelImage_(pixelCoord[0],pixelCoord[1])=static_cast<LabelType>(c);
-                    distance_(pixelCoord[0],pixelCoord[1])=dist;
-                }
+        for(pixelCoord[1]=startCoord[1]; pixelCoord[1]<endCoord[1]; ++pixelCoord[1])
+        for(pixelCoord[0]=startCoord[0]; pixelCoord[0]<endCoord[0]; ++pixelCoord[0]){
+            // compute distance between cluster center and pixel
+            ValueType dist=this->distance(c,pixelCoord);
+            // update label?
+            if(dist<=distance_(pixelCoord[0],pixelCoord[1])){
+                labelImage_(pixelCoord[0],pixelCoord[1])=static_cast<LabelType>(c);
+                distance_(pixelCoord[0],pixelCoord[1])=dist;
             }
         }
     }
@@ -196,10 +188,10 @@ Slic<DATA_IMAGE,LABEL_IMAGE>::updateAssigments(){
     return totalDistance;
 }
 
-template<class DATA_IMAGE ,class LABEL_IMAGE >
+template<class DATA_IMAGE ,class LABEL_IMAGE ,int DIM >
 template<class COORDINATE_VALUE_TYPE>
 inline void 
-Slic<DATA_IMAGE,LABEL_IMAGE>::getWindowLimits
+Slic<DATA_IMAGE,LABEL_IMAGE,DIM>::getWindowLimits
 (
     const vigra::TinyVector<COORDINATE_VALUE_TYPE,2> &  centerCoord,
     vigra::TinyVector<int,2> &                          startCoord,
@@ -213,9 +205,9 @@ Slic<DATA_IMAGE,LABEL_IMAGE>::getWindowLimits
 }
 
 
-template<class DATA_IMAGE ,class LABEL_IMAGE >
+template<class DATA_IMAGE ,class LABEL_IMAGE ,int DIM >
 void 
-Slic<DATA_IMAGE,LABEL_IMAGE>::updateMeans(
+Slic<DATA_IMAGE,LABEL_IMAGE,DIM>::updateMeans(
 ){
     // get mean for each cluster
     // initialize cluster size with zeros 
@@ -246,9 +238,9 @@ Slic<DATA_IMAGE,LABEL_IMAGE>::updateMeans(
     }
 }
 
-template<class DATA_IMAGE ,class LABEL_IMAGE >
-inline typename Slic<DATA_IMAGE,LABEL_IMAGE>::ValueType 
-Slic<DATA_IMAGE,LABEL_IMAGE>::distance(
+template<class DATA_IMAGE ,class LABEL_IMAGE ,int DIM >
+inline typename Slic<DATA_IMAGE,LABEL_IMAGE,DIM>::ValueType 
+Slic<DATA_IMAGE,LABEL_IMAGE,DIM>::distance(
     const size_t                         centerIndex,
     const vigra::TinyVector<int,2> &     pixelCoord
 )const{
@@ -261,9 +253,9 @@ Slic<DATA_IMAGE,LABEL_IMAGE>::distance(
     return  colorDist + (spatialDist/normalization)*mm_;
 }
 
-template<class DATA_IMAGE ,class LABEL_IMAGE >
+template<class DATA_IMAGE ,class LABEL_IMAGE ,int DIM >
 size_t 
-Slic<DATA_IMAGE,LABEL_IMAGE>::postProcessing(){
+Slic<DATA_IMAGE,LABEL_IMAGE,DIM>::postProcessing(){
     // get ride of disjoint regions:
     const size_t numLabels=vigra::labelImage(vigra::srcImageRange(labelImage_), vigra::destImage(tmpLabelImage_), false);
     tmpLabelImage_-=1;
@@ -273,26 +265,25 @@ Slic<DATA_IMAGE,LABEL_IMAGE>::postProcessing(){
     std::vector< std::vector< vigra::TinyVector<int,2> > >  regionsPixels(numLabels);
     std::vector< std::vector<LabelType> >                   regionAdjacency(numLabels);
     // fill region adjacency graph
-    for(pixelCoord[1]=0 ;pixelCoord[1]<shape_[1];++pixelCoord[1]){
-        for(pixelCoord[0]=0 ;pixelCoord[0]<shape_[0];++pixelCoord[0]){
-            const LabelType l1=tmpLabelImage_(pixelCoord[0],pixelCoord[1]);
-            if(pixelCoord[0]+1<shape_[0]){
-                const LabelType l2=tmpLabelImage_(pixelCoord[0]+ 1 ,pixelCoord[1] );
-                if(l1!=l2){
-                    regionAdjacency[l1].push_back(l2);
-                    regionAdjacency[l2].push_back(l1);
-                }
+    for(pixelCoord[1]=0 ;pixelCoord[1]<shape_[1];++pixelCoord[1])
+    for(pixelCoord[0]=0 ;pixelCoord[0]<shape_[0];++pixelCoord[0]){
+        const LabelType l1=tmpLabelImage_(pixelCoord[0],pixelCoord[1]);
+        if(pixelCoord[0]+1<shape_[0]){
+            const LabelType l2=tmpLabelImage_(pixelCoord[0]+ 1 ,pixelCoord[1] );
+            if(l1!=l2){
+                regionAdjacency[l1].push_back(l2);
+                regionAdjacency[l2].push_back(l1);
             }
-            if(pixelCoord[1]+1<shape_[1]){
-                const LabelType l2=tmpLabelImage_(pixelCoord[0],pixelCoord[1]+1 );
-                if(l1!=l2){
-                    regionAdjacency[l1].push_back(l2);
-                    regionAdjacency[l2].push_back(l1);
-                }
-            }        
-            const LabelType label=tmpLabelImage_(pixelCoord[0],pixelCoord[1]);
-            regionsPixels[label].push_back(pixelCoord);
         }
+        if(pixelCoord[1]+1<shape_[1]){
+            const LabelType l2=tmpLabelImage_(pixelCoord[0],pixelCoord[1]+1 );
+            if(l1!=l2){
+                regionAdjacency[l1].push_back(l2);
+                regionAdjacency[l2].push_back(l1);
+            }
+        }        
+        const LabelType label=tmpLabelImage_(pixelCoord[0],pixelCoord[1]);
+        regionsPixels[label].push_back(pixelCoord);
     }
     // fill region size
     const size_t sizeLimit_=options_.sizeLimit_;

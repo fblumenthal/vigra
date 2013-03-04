@@ -15,7 +15,7 @@ namespace vigra{
     inline void 
     generateSlicSeeds(
         const BOUNDARY_INDICATOR_IMAGE      &  boundaryIndicatorImage,
-        std::vector<SlicSeed>               &  seeds,
+        std::vector<SlicSeed<2> >               &  seeds,
         const SlicSeedOptions               &  options 
     ){
         generateSlicSeedsImpl <const BOUNDARY_INDICATOR_IMAGE & >( boundaryIndicatorImage,seeds,options);
@@ -26,7 +26,7 @@ namespace vigra{
     inline void 
     slicSuperpixels(
         const DATA_IMAGE_TYPE &         dataImage,
-        const std::vector<SlicSeed> &   seeds,
+        const std::vector<SlicSeed<2> > &   seeds,
         LABEL_IMAGE_TYPE  &             labelImage,
         const SlicOptions &             parameter
     ){

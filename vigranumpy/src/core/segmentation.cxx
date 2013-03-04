@@ -842,12 +842,12 @@ VIGRA_PYTHON_MULTITYPE_FUNCTOR(pywatersheds3D, pythonWatersheds3D)
 
 
 template < class PixelType>
-SlicSeedVector * 
+SlicSeed2dVector * 
 pythonSlicSeeds(    NumpyArray<2,Singleband<PixelType> > boundaryIndicatorImage,
                     int k,
                     int r) 
 {
-    SlicSeedVector * seeds=new SlicSeedVector();
+    SlicSeed2dVector * seeds=new SlicSeed2dVector();
     SlicSeedOptions seedingOptions(k,r);
     generateSlicSeedsImpl(boundaryIndicatorImage,*seeds,seedingOptions);
     return seeds;
@@ -859,7 +859,7 @@ pythonSlicSeeds(    NumpyArray<2,Singleband<PixelType> > boundaryIndicatorImage,
 template<class PixelType>
 NumpyAnyArray
 pythonSlicSuperpixels(  NumpyArray<2, PixelType > image,
-                        const SlicSeedVector & seeds,
+                        const SlicSeed2dVector & seeds,
                         const SlicOptions & slicOptions,
                         NumpyArray<2, Singleband<npy_uint32> > res = NumpyArray<2, Singleband<npy_uint32> >())
 {
@@ -877,7 +877,7 @@ pythonSlicSuperpixels(  NumpyArray<2, PixelType > image,
     return res;
 }
 
-inline python::tuple coorinateToTuple(const SlicSeed & seed){
+inline python::tuple coorinateToTuple(const SlicSeed2d & seed){
     return python::make_tuple(seed.coordinates_[0],seed.coordinates_[1]);
 }
 
@@ -888,34 +888,19 @@ void defineSegmentation()
     docstring_options doc_options(true, true, false);
 
 
-    python::class_<SlicSeed>("SlicSeed",init< TinyVector<int,2> , const int >(  (arg("coordinate")=python::make_tuple(0,0),arg("r")=0)  ))
+    python::class_<SlicSeed2d>("SlicSeed",init< TinyVector<int,2> , const int >(  (arg("coordinate")=python::make_tuple(0,0),arg("r")=0)  ))
     //.def_readwrite("coordinate", &SlicSeed::coordinates_)
-    .add_property("coordinate", & coorinateToTuple, &SlicSeed::coordinates_)
-    .def_readwrite("r",&SlicSeed::radius_)
+    .add_property("coordinate", & coorinateToTuple, &SlicSeed2d::coordinates_)
+    .def_readwrite("r",&SlicSeed2d::radius_)
     ;
 
-    /*
-    struct SlicOptions{
-    SlicOptions(
-        const double m=10.0,
-        const size_t iterations=40,
-        const size_t sizeLimit=4
-    ):
-    m_(m),
-    iterations_(iterations),
-    sizeLimit_(sizeLimit){
-    }
-    const double m_;
-    const size_t iterations_;
-    const size_t sizeLimit_;
-    };
-    */
+
 
     python::class_<SlicOptions>("SlicOptions",init<const double,const size_t,const size_t>( ( arg("m")=10.0,arg("iterations")=40,arg("sizeLimit")=4) ,"SlicOptions constructor" ) )
     ;
 
-    python::class_<SlicSeedVector>("SlicSeedVector",init<>())
-        .def(vector_indexing_suite<SlicSeedVector >())
+    python::class_<SlicSeed2dVector>("SlicSeedVector",init<>())
+        .def(vector_indexing_suite<SlicSeed2dVector >())
     ;
 
     python::def("slicSeeds", registerConverters(&pythonSlicSeeds<float>),python::return_value_policy<python::manage_new_object>() ,

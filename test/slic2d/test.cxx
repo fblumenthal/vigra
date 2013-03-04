@@ -64,7 +64,7 @@ struct Slic2dTest
 
     void test_seeding()
     {    
-        std::vector< vigra::SlicSeed > seedVector;
+        std::vector< vigra::SlicSeed2d > seedVector;
         vigra::SlicSeedOptions seedingOptions(10,1);
         // get grad mag image
         FImage gradMag(w,h);
