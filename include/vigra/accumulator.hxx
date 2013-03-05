@@ -1653,6 +1653,23 @@ struct ConfigureAccumulatorChain<T, TypeList<HEAD, TAIL>, dynamic, GlobalHandle>
     typedef typename AccumulatorFactory<HEAD, ConfigureAccumulatorChain>::type type;
 };
 
+// CHANGED
+// when using AccumulatorChainArray with only Global Statistics
+template <class T, bool dynamic, class GlobalHandle>
+struct ConfigureAccumulatorChain<T, void, dynamic, GlobalHandle>
+#ifndef DOXYGEN
+  : public ConfigureAccumulatorChain<T, TypeList<Count, void>, dynamic, GlobalHandle>
+#endif
+{};
+// CHANGED
+// when using AccumulatorChainArray with only Region Statistics
+template <class T, bool dynamic>
+struct ConfigureAccumulatorChain<T, void, dynamic>
+#ifndef DOXYGEN
+  : public ConfigureAccumulatorChain<T, Select<Count>, dynamic>
+#endif
+{};
+
 template <class T, class Selected, bool dynamic=false>
 struct ConfigureAccumulatorChainArray
 #ifndef DOXYGEN
