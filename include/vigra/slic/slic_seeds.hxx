@@ -105,13 +105,13 @@ namespace vigra{
             static_cast<int>(boundaryIndicatorImage.shape(0)),
             static_cast<int>(boundaryIndicatorImage.shape(1))
         };
-        int seedDist=int(     std::sqrt(float(shape[0]*shape[1])/options.k_)  + 0.5f);
+        int seedDist=int(     std::sqrt(float(shape[0]*shape[1])/options.k_)  + 0.0f);
         //std::cout<<"seed dist "<<seedDist<<"\n";
         std::set<size_t> usedCenters;
         CoordinateType cCoord,startCoord,endCoord;
 
-        for(cCoord[1] = 0; cCoord[1] < shape[1]; cCoord[1] += seedDist)
-        for(cCoord[0] = 0; cCoord[0] < shape[0]; cCoord[0] += seedDist){
+        for(cCoord[1] = seedDist/2; cCoord[1] < shape[1]; cCoord[1] += seedDist)
+        for(cCoord[0] = seedDist/2; cCoord[0] < shape[0]; cCoord[0] += seedDist){
             // find min. gradient position in a window  of r
             //bool foundCenterPosition=false;
             ValueType minGrad=std::numeric_limits<ValueType>::infinity();
