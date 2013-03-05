@@ -1411,6 +1411,44 @@ struct AccumulatorTest
             shouldEqual(W(3, 0, 1), get<AutoRangeHistogram<3> >(c,3));
         }
     }
+  
+  void testRegionStatisticsOnly() {
+    using namespace vigra::acc;
+    MultiArray<2, double> data(Shape2(3,2));
+    data(0,0) = 0.1;
+    data(2,0) = 1.0;
+    data(2,1) = 0.9;
+    MultiArray<2, int> labels(Shape2(3,2));
+    labels(2,0) = labels(2,1) = 1;
+    
+    typedef vigra::CoupledIteratorType<2, double, int>::type Iterator;
+    typedef Iterator::value_type Handle;
+    
+    AccumulatorChainArray<Handle,
+			  Select<Count// , Global<Count>
+				 > >
+      a;
+  }
+  
+  void testGlobalStatisticsOnly() {
+    using namespace vigra::acc;
+    MultiArray<2, double> data(Shape2(3,2));
+    data(0,0) = 0.1;
+    data(2,0) = 1.0;
+    data(2,1) = 0.9;
+    MultiArray<2, int> labels(Shape2(3,2));
+    labels(2,0) = labels(2,1) = 1;
+    
+    typedef vigra::CoupledIteratorType<2, double, int>::type Iterator;
+    typedef Iterator::value_type Handle;
+    
+    AccumulatorChainArray<Handle,
+			  Select<// Count,
+			    Global<Count>
+			    > >
+    a;
+  }
+
 };
 
 struct FeaturesTestSuite : public vigra::test_suite
@@ -1427,6 +1465,8 @@ struct FeaturesTestSuite : public vigra::test_suite
         add(testCase(&AccumulatorTest::testHistogram));
         add(testCase(&AccumulatorTest::testLabelDispatch));
         add(testCase(&AccumulatorTest::testIndexSpecifiers));
+	add(testCase(&AccumulatorTest::testRegionStatisticsOnly));
+	add(testCase(&AccumulatorTest::testGlobalStatisticsOnly));
     }
 };
 
