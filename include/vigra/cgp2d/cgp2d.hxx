@@ -2,7 +2,9 @@
 #include <vector>
 #include <iostream>
 #include <algorithm>
+#include <cmath>
 
+#include <map>
 
 #include <vigra/multi_array.hxx>
 #include <vigra/tinyvector.hxx>
@@ -19,7 +21,7 @@
 #include "opengm/config.hxx"
 #include "opengm/utilities/metaprogramming.hxx"
 
-
+#define MYPI 3.14159265
 
 
 
@@ -45,6 +47,11 @@
 
 namespace vigra {
 
+
+
+
+
+
     template<class LABEL_TYPE>
     class TopologicalGrid{
     public:
@@ -62,6 +69,8 @@ namespace vigra {
         const LabelImageType & tgrid()const;
         size_t numCells(const size_t i)const;
         size_t shape(const size_t d)const;
+        LabelType operator()(const size_t tx,const size_t ty)     {return tgrid_(tx,ty);}
+        LabelType operator()(const size_t tx,const size_t ty)const{return tgrid_(tx,ty);}
     private:
         size_t numCells_[3];
         LabelImageType tgrid_;
@@ -206,15 +215,92 @@ namespace vigra {
 
     template<class COORDINATE_TYPE,class LABEL_TYPE>
     class Cell<COORDINATE_TYPE,LABEL_TYPE,0> : public CellBase<COORDINATE_TYPE,LABEL_TYPE,0>{
+    public:
+        typedef LABEL_TYPE LabelType;
+        typedef COORDINATE_TYPE CoordinateType;
+        typedef TopologicalGrid<LabelType> TopologicalGridType;
+        typedef TinyVector<CoordinateType,2> PointType;
 
+        void getAngles(const TopologicalGridType & tgrid,const size_t radius=6){
+
+            const int r=static_cast<int>(radius);
+            const CoordinateType tx=this->points_[0][0],ty=this->points_[0][1];
+            const CoordinateType xmin=    static_cast<int>(tx)-r < 0 ? 0 : static_cast<CoordinateType>(static_cast<int>(tx)-r );
+            const CoordinateType ymin=    static_cast<int>(ty)-r < 0 ? 0 : static_cast<CoordinateType>(static_cast<int>(ty)-r );
+            const CoordinateType xmax=    static_cast<int>(tx)+r+1 > tgrid.shape(0) ?   tgrid.shape(0) : static_cast<CoordinateType>(static_cast<int>(tx)+r+1 );
+            const CoordinateType ymax=    static_cast<int>(ty)+r+1 > tgrid.shape(1) ?   tgrid.shape(1) : static_cast<CoordinateType>(static_cast<int>(ty)+r+1 );
+
+            typedef std::pair<PointType,size_t>  MapItem;
+            typedef std::map<LabelType,MapItem > AverageMapType;
+            typedef typename AverageMapType::const_iterator AverageMapConstIter;
+            typedef typename AverageMapType::iterator AverageMapIter;
+
+            AverageMapType averageMap;
+            for(size_t b=0;b<this->bounds_.size();++b){
+                MapItem initItem= std::pair<PointType,size_t>(PointType(0,0),0);
+                averageMap[b]=initItem;
+            }
+
+            // collect
+            for(CoordinateType tyy=ymin;tyy<ymax;++tyy)
+            for(CoordinateType txx=xmin;txx<xmax;++txx){
+                // if boundary
+                if(  (txx%2==1 && tyy%2==0) || (txx%2==0 && tyy%2==1) ){
+
+                    LabelType cell1Label=tgrid(txx,tyy);
+                    if(cell1Label!=0){
+                        AverageMapIter iter=averageMap.find(cell1Label);
+                        if(iter!=averageMap.end()){
+                            MapItem item=iter->second;
+                            item.first+=PointType(txx,tyy);
+                            ++item.second;
+                            averageMap[cell1Label]=item;
+                        }
+                    }
+                }
+            }
+            // normalize 
+            std::cout<<"degrees : ";
+            for(AverageMapConstIter iter=averageMap.begin();iter!=averageMap.end();++iter){\
+                MapItem item=iter->second;
+                PointType averagePoint = item.first;
+                averagePoint/=item.second;
+
+                const float x=static_cast<float>(tx);
+                const float y=static_cast<float>(ty);
+                const float ax=static_cast<float>(averagePoint[0]);
+                const float ay=static_cast<float>(averagePoint[1]);
+
+                const float rx=ax-x;
+                const float ry=ay-y;
+
+                const float result = std::atan2 (ry,rx) * 180.0 / MYPI;
+
+                std::cout<<" "<<result;
+
+            }
+            std::cout<<"\n";
+        }
     };
 
     template<class COORDINATE_TYPE,class LABEL_TYPE>
     class Cell<COORDINATE_TYPE,LABEL_TYPE,1> : public CellBase<COORDINATE_TYPE,LABEL_TYPE,1>{
+    public:
+        typedef LABEL_TYPE LabelType;
+        typedef COORDINATE_TYPE CoordinateType;
+        typedef TopologicalGrid<LabelType> TopologicalGridType;
+        typedef TinyVector<CoordinateType,2> PointType;
+    private:
     };
 
     template<class COORDINATE_TYPE,class LABEL_TYPE>
     class Cell<COORDINATE_TYPE,LABEL_TYPE,2> : public CellBase<COORDINATE_TYPE,LABEL_TYPE,2>{
+    public:
+        typedef LABEL_TYPE LabelType;
+        typedef COORDINATE_TYPE CoordinateType;
+        typedef TopologicalGrid<LabelType> TopologicalGridType;
+        typedef TinyVector<CoordinateType,2> PointType;
+    private:
     };
 
     template<class COORDINATE_TYPE,class LABEL_TYPE>
@@ -506,8 +592,8 @@ namespace vigra {
             const size_t tx=geoCells0_[cell0Index][0][0];
             const size_t ty=geoCells0_[cell0Index][0][1];
             // Loop over all possible Cell1's / boundaries of the Cell0 / Junction
-            const int px[]={ 1, 1,-1,-1};
-            const int py[]={ 1,-1, 1,-1};
+            const int px[]={ 1, -1, 0, 0};
+            const int py[]={ 0,  0, 1,-1};
             for(size_t b=0;b<4;++b){
                 LabelType cell1Label=grid(int(tx)+px[b],int(ty)+py[b]);
                 // check if Cell1 / boundary is active
@@ -579,6 +665,8 @@ namespace vigra {
         for(size_t cell0Index=0;cell0Index<tgrid.numCells(0);++cell0Index){
             // sortAdjaceny
             geoCells0_[cell0Index].setLabel(cell0Index);
+            // sortAdjaceny
+            geoCells0_[cell0Index].sortAdjaceny();
         }
 
     }

@@ -968,6 +968,7 @@ void defineSegmentation()
         .def("boundedBy",&GeoCell0Type::boundedBy,return_internal_reference<>())
         .def("points",&GeoCell0Type::points,return_internal_reference<>())
         .def("points2",registerConverters(&pointNumpyTupe<GeoCell0Type>))
+        .def("getAngles",&GeoCell0Type::getAngles)
     ;
 
     python::class_<GeoCell1Type>("Cell1",python::init<>())
