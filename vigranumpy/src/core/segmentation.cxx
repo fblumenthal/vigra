@@ -46,6 +46,9 @@
 #include <vigra/watersheds3d.hxx>
 #include <vigra/seededregiongrowing3d.hxx>
 
+// for region graph
+#include <vigra/cgp2d/cgp2d.hxx>
+
 // for slic
 #include <vigra/slic.hxx>
 #include <boost/python/suite/indexing/vector_indexing_suite.hpp>
@@ -881,6 +884,24 @@ inline python::tuple coorinateToTuple(const SlicSeed2d & seed){
     return python::make_tuple(seed.coordinates_[0],seed.coordinates_[1]);
 }
 
+
+template<class CELL>
+python::tuple pointNumpyTupe(const CELL & cell){
+    const size_t numPoints=cell.points().size();
+    typedef NumpyArray<1,UInt32>  SingleCoordArrayType;
+    typedef typename SingleCoordArrayType::difference_type ShapeType;
+    const ShapeType shape(numPoints);
+
+    SingleCoordArrayType cx(shape),cy(shape);
+    for(size_t i=0;i<numPoints;++i){
+        cx(i)=cell.points()[i][0];
+        cy(i)=cell.points()[i][1];
+    }
+    NumpyAnyArray ax=cx,ay=cy;
+    return python::make_tuple(ax,ay);
+}
+
+
 void defineSegmentation()
 {
     using namespace python;
@@ -888,6 +909,103 @@ void defineSegmentation()
     docstring_options doc_options(true, true, false);
 
 
+    ////////////////////////////////////////
+    // Region Graph
+    ////////////////////////////////////////
+
+    // basic types
+    typedef vigra::UInt32 LabelType;
+    typedef vigra::UInt32 CoordinateType;
+
+    // tgrid and input image type
+    typedef TopologicalGrid<LabelType> TopologicalGridType;
+    typedef  NumpyArray<2 ,Singleband < npy_uint32> > InputLabelImageType;
+
+
+    
+
+    // cgp type and cell types
+    typedef Cgp<CoordinateType,LabelType> CgpType;
+    typedef CgpType::PointType PointType;
+
+
+    // bound vector
+    typedef std::vector<LabelType> LabelVectorType;
+    // point vector
+    typedef std::vector<PointType> PointVectorType;
+    // geo cells 
+    typedef CgpType::GeoCell0 GeoCell0Type;
+    typedef CgpType::GeoCell1 GeoCell1Type;
+    typedef CgpType::GeoCell2 GeoCell2Type;
+
+    typedef CgpType::GeoCells0 GeoCell0VectorType;
+    typedef CgpType::GeoCells1 GeoCell1VectorType;
+    typedef CgpType::GeoCells2 GeoCell2VectorType;
+    // geo cell vectors
+    //typedef 
+
+
+    python::class_<TopologicalGridType>("TopologicalGrid",python::init<const InputLabelImageType & >())
+    .def("numCells",&TopologicalGridType::numCells)
+    ;
+
+
+
+    // bound / bounded by vector
+    python::class_<LabelVectorType>("LabelVector",init<>())
+        .def(vector_indexing_suite<LabelVectorType >())
+    ;
+
+    // point   vector
+    python::class_<PointVectorType>("PointVector",init<>())
+        .def(vector_indexing_suite<PointVectorType >())
+    ;
+
+
+    // cells
+    python::class_<GeoCell0Type>("Cell0",python::init<>())
+        .def("bounds",&GeoCell0Type::bounds,return_internal_reference<>())
+        .def("boundedBy",&GeoCell0Type::boundedBy,return_internal_reference<>())
+        .def("points",&GeoCell0Type::points,return_internal_reference<>())
+        .def("points2",registerConverters(&pointNumpyTupe<GeoCell0Type>))
+    ;
+
+    python::class_<GeoCell1Type>("Cell1",python::init<>())
+        .def("bounds",&GeoCell1Type::bounds,return_internal_reference<>())
+        .def("boundedBy",&GeoCell1Type::boundedBy,return_internal_reference<>())
+        .def("points",&GeoCell1Type::points,return_internal_reference<>())
+        .def("points2",registerConverters(&pointNumpyTupe<GeoCell1Type>))
+    ;
+
+    python::class_<GeoCell2Type>("Cell2",python::init<>())
+        .def("bounds",&GeoCell2Type::bounds,return_internal_reference<>())
+        .def("boundedBy",&GeoCell2Type::boundedBy,return_internal_reference<>())
+        .def("points",&GeoCell2Type::points,return_internal_reference<>())
+        .def("points2",registerConverters(&pointNumpyTupe<GeoCell2Type>))
+    ;
+
+    // cell vectors
+    python::class_<GeoCell0VectorType>("Cell0Vector",init<>())
+        .def(vector_indexing_suite<GeoCell0VectorType >())
+    ;
+    python::class_<GeoCell1VectorType>("Cell1Vector",init<>())
+        .def(vector_indexing_suite<GeoCell1VectorType >())
+    ;
+    python::class_<GeoCell2VectorType>("Cell2Vector",init<>())
+        .def(vector_indexing_suite<GeoCell2VectorType >())
+    ;
+
+    // cgp
+    python::class_<CgpType>("Cgp",python::init<const TopologicalGridType & >())
+        .def("cells0",&CgpType::geometry0,return_internal_reference<>())
+        .def("cells1",&CgpType::geometry1,return_internal_reference<>())
+        .def("cells2",&CgpType::geometry2,return_internal_reference<>())
+    ;
+
+
+    ////////////////////////////////////////
+    // SLIC
+    ////////////////////////////////////////
     python::class_<SlicSeed2d>("SlicSeed",init< TinyVector<int,2> , const int >(  (arg("coordinate")=python::make_tuple(0,0),arg("r")=0)  ))
     //.def_readwrite("coordinate", &SlicSeed::coordinates_)
     .add_property("coordinate", & coorinateToTuple, &SlicSeed2d::coordinates_)
