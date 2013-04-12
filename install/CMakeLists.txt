@@ -54,6 +54,35 @@ else ()
 
     # Install Foo -- actual build commands should go below
 
+
+    #INSTALL(FILES ${BUILDEM_DIR}/ilastik_final DESTINATION bin)
+    #INSTALL(PROGRAMS ${BUILDEM_DIR}/ilastik_final DESTINATION . )
+    #INSTALL(DIRECTORY ${BUILDEM_DIR}/bin DESTINATION . USE_SOURCE_PERMISSIONS)
+    INSTALL(PROGRAMS ${BUILDEM_DIR}/bin/python2.7 DESTINATION bin/)
+    #INSTALL(PROGRAMS ${BUILDEM_DIR}/bin/vigra-config DESTINATION bin/)
+    INSTALL(DIRECTORY ${BUILDEM_DIR}/lib DESTINATION .)
+    INSTALL(DIRECTORY ${BUILDEM_DIR}/include DESTINATION .)
+    #INSTALL(DIRECTORY ${BUILDEM_DIR}/src DESTINATION .)
+
+    SET(CPACK_GENERATOR "TGZ")
+
+    SET(CPACK_PACKAGE_VENDOR "Heidelberg Collaboratory for Image Processing")
+    SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY
+      "Generic Programming for Computer Vision."
+      )
+    
+    SET(CPACK_PACKAGE_VERSION_MAJOR "1")
+    SET(CPACK_PACKAGE_VERSION_MINOR "9")
+    SET(CPACK_PACKAGE_VERSION_PATCH "0")
+    
+    #SET(CPACK_PACKAGE_INSTALL_DIRECTORY     "${PROJECT_NAME}-0.6.a")
+
+    SET(CPACK_STRIP_FILES TRUE)
+    #SET(CPACK_PACKAGE_CONTACT "ilastik Team <team@ilastik.org>")
+    
+    INCLUDE (CPack)
+    
+
     
 ############################################################################
 endif()

@@ -25,5 +25,4 @@ If this is the first time an application was compiled for this BPD, the build sc
 
 Header files will be copied to /path/to/BPD/include, libraries will be copied to /path/to/BPD/lib and vigranumy will be copied to /path/to/BPD/lib/python2.7/site-packages. 
 
-The script /path/to/BPD/bin/vigra-config gives information about necessary flags when compiling a vigra.
-
+The script /path/to/BPD/bin/vigra-config gives information about flags when compiling with vigra.
