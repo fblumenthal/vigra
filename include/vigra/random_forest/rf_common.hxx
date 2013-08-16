@@ -47,6 +47,9 @@ struct ClassificationTag
 struct RegressionTag
 {};
 
+struct HoughTag
+{};
+
 namespace detail
 {
     class RF_DEFAULT;

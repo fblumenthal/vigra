@@ -5,3 +5,4 @@
 #                      ${CMAKE_CURRENT_BINARY_DIR}/oldClassifier.log
 #                      COPYONLY)
 VIGRA_COPY_TEST_DATA(oldClassifier.log oldsetTest.log)
+VIGRA_COPY_TEST_DATA(regression1D_noise.h5 regressionND_noise.h5)
