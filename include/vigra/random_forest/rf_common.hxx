@@ -521,7 +521,7 @@ class RandomForestOptions
 
 /** \brief problem types 
  */
-enum Problem_t{REGRESSION, CLASSIFICATION, CHECKLATER};
+enum Problem_t{REGRESSION, CLASSIFICATION, HOUGHFOREST, CHECKLATER};
 
 
 /** \brief problem specification class for the random forest.

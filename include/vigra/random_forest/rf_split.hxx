@@ -82,6 +82,18 @@ namespace detail
                 begin[ii] = begin[ii]/bla ;
         }
     };
+
+    template<>
+    class Normalise<RegressionTag>
+    {
+    public:
+        template<class Iter>
+        static void exec (Iter begin, Iter end)
+        {
+            //std::cerr << "actually here ";
+        }
+    };
+
 }
 
 
@@ -390,6 +402,7 @@ public:
                               Array2    const & weights, 
                               double            total)
     {
+        if (total==0) return 0;
 
         int     class_count     = hist.size();
         double  entropy            = 0.0;
@@ -398,6 +411,9 @@ public:
             double p0           = (hist[0]/total);
             double p1           = (hist[1]/total);
             entropy             = 0 - weights[0]*p0*std::log(p0) - weights[1]*p1*std::log(p1);
+
+            if(p0 == 0 || p1 == 0)
+                entropy = 0;
         }
         else
         {
@@ -405,7 +421,9 @@ public:
             {
                 double w        = weights[ii];
                 double pii      = hist[ii]/total;
-                entropy         -= w*( pii*std::log(pii));
+                double mult     = pii == 0 ? 0 : std::log(pii);
+                entropy         -= w*( pii*mult);
+
             }
         }
         entropy             = total * entropy;
@@ -547,12 +565,16 @@ class ImpurityLoss
     }
 
     template<class Iter, class Resp_t>
-    double init (Iter begin, Iter end, Resp_t resp)
+    double init (Iter begin, Iter end, Resp_t resp, bool flag=true)
     {
+        if(flag)
+        {
         reset();
         std::copy(resp.begin(), resp.end(), counts_.begin());
         total_counts_ = std::accumulate(counts_.begin(), counts_.end(), 0.0); 
         return impurity_(counts_,class_weights_, total_counts_);
+        }
+        return 0;
     }
     
     ArrayVector<double> const & response()
@@ -1485,6 +1507,7 @@ public:
 
         
 
+        left.init(begin, end, region_response, false);
         min_gini_ = right.init(begin, end, region_response);  
         min_threshold_ = *begin;
         min_index_     = 0;  //the starting point where to split 

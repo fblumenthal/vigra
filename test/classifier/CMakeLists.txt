@@ -14,8 +14,9 @@ if(HDF5_FOUND)
 
     ADD_DEFINITIONS(${HDF5_CPPFLAGS} -DHasHDF5)
     VIGRA_ADD_TEST(test_regression_forest regression_forest_test_suite.cxx LIBRARIES vigraimpex ${HDF5_LIBRARIES})
+    VIGRA_ADD_TEST(test_hough_forest hough_forest_test_suite.cxx LIBRARIES vigraimpex ${HDF5_LIBRARIES})
 else()
-    MESSAGE(STATUS "** WARNING: regression_forest_test_suite will not be executed")
+    MESSAGE(STATUS "** WARNING: regression_forest_test_suite and hough_forest_test_suite will not be executed")
 endif()
 
 add_subdirectory(data)

@@ -454,6 +454,7 @@ class Node<i_HyperplaneNode>
                     BT::P_Container_type    &   split_param)
                 :   BT(nCol + 5,nCol + 2,topology, split_param)
     {
+        BT::column_data()[0] = nCol;
         BT::typeID() = i_HyperplaneNode;
     }
 

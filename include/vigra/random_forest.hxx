@@ -60,6 +60,10 @@
 #include "random_forest/rf_online_prediction_set.hxx"
 #include "random_forest/rf_earlystopping.hxx"
 #include "random_forest/rf_ridge_split.hxx"
+
+#include "random_forest/rf_more_visitor.hxx"
+#include "random_forest/rf_more_splits.hxx"
+
 namespace vigra
 {
 
@@ -670,10 +674,23 @@ class RandomForest
         predictProbabilities(features, prob, rf_default()); 
     }   
 
+
+    template <class U, class C1, class T, class C2, class Stop_t, class Visitor_t>
+    void predictProbabilities(MultiArrayView<2, U, C1>const &  features,
+                               MultiArrayView<2, T, C2> &       prob,
+                               Stop_t                   &       stop_,
+                               Visitor_t                &       visitor_) const;
+
+
     template <class U, class C1, class T, class C2>
     void predictRaw(MultiArrayView<2, U, C1>const &   features,
                     MultiArrayView<2, T, C2> &        prob)  const;
 
+    template <class U, class C1, class T, class C2, class Stop_t, class Visitor_t>
+    void predictRaw2(MultiArrayView<2, U, C1>const &   features,
+                    MultiArrayView<2, T, C2> &        prob,
+                    Stop_t & stop,
+                    Visitor_t & visitor)  const;
 
     /*\}*/
 
@@ -1227,11 +1244,23 @@ void RandomForest<LabelType, PreprocessorTag>
                            MultiArrayView<2, T, C2> &       prob,
                            Stop_t                   &       stop_) const
 {
+    vigra::rf::visitors::StopVisiting visitor;
+    predictProbabilities(features, prob, stop_, visitor);
+}
+
+template <class LabelType, class PreprocessorTag>
+template <class U, class C1, class T, class C2, class Stop_t, class Visitor_t>
+void RandomForest<LabelType, PreprocessorTag>
+    ::predictProbabilities(MultiArrayView<2, U, C1>const &  features,
+                           MultiArrayView<2, T, C2> &       prob,
+                           Stop_t                   &       stop_,
+                           Visitor_t                &       visitor_) const
+{
     //Features are n xp
     //prob is n x NumOfLabel probability for each feature in each class
 
     vigra_precondition(rowCount(features) == rowCount(prob),
-      "RandomForestn::predictProbabilities():"
+      "RandomForest::predictProbabilities():"
         " Feature matrix and probability matrix size mismatch.");
 
     // num of features must be bigger than num of features in Random forest training
@@ -1281,7 +1310,11 @@ void RandomForest<LabelType, PreprocessorTag>
         for(int k=0; k<options_.tree_count_; ++k)
         {
             //get weights predicted by single tree
-            weights = trees_[k /*tree_indices_[k]*/].predict(currentRow);
+            visitor_.visit_before_tree_prediction(*this, k,row);
+            weights = trees_[k /*tree_indices_[k]*/].predict(currentRow, visitor_);
+
+
+            //visitor_.visit_after_tree(*this, k, k, k, k );
 
             //update votecount.
             int weighted = options_.predict_weighted_;
@@ -1373,6 +1406,92 @@ void RandomForest<LabelType, PreprocessorTag>
     prob/= options_.tree_count_;
 
 }
+
+template <class LabelType, class PreprocessorTag>
+template <class U, class C1, class T, class C2, class Stop_t, class Visitor_t>
+void RandomForest<LabelType, PreprocessorTag>
+    ::predictRaw2(MultiArrayView<2, U, C1>const &  features,
+                 MultiArrayView<2, T, C2> &       prob,
+                 Stop_t                   &       stop_,
+                 Visitor_t                &       visitor_) const
+{
+    //Features are n xp
+    //prob is n x NumOfLabel probability for each feature in each class
+
+    vigra_precondition(rowCount(features) == rowCount(prob),
+      "RandomForestn::predictProbabilities():"
+        " Feature matrix and probability matrix size mismatch.");
+
+    // num of features must be bigger than num of features in Random forest training
+    // but why bigger?
+    vigra_precondition( columnCount(features) >= ext_param_.column_count_,
+      "RandomForestn::predictProbabilities():"
+        " Too few columns in feature matrix.");
+
+    std::cout<<ext_param_.class_count_<<std::endl;
+    vigra_precondition( columnCount(prob)
+                        == (MultiArrayIndex)ext_param_.class_count_,
+      "RandomForestn::predictProbabilities():"
+      " Probability matrix must have as many columns as there are classes.");
+
+    #define RF_CHOOSER(type_) detail::Value_Chooser<type_, Default_##type_>
+    Default_Stop_t default_stop(options_);
+    typename RF_CHOOSER(Stop_t)::type & stop
+            = RF_CHOOSER(Stop_t)::choose(stop_, default_stop);
+    #undef RF_CHOOSER
+    stop.set_external_parameters(ext_param_, tree_count());
+
+
+    prob.init(NumericTraits<T>::zero());
+    /* This code was originally there for testing early stopping
+     * - we wanted the order of the trees to be randomized
+    if(tree_indices_.size() != 0)
+    {
+       std::random_shuffle(tree_indices_.begin(),
+                           tree_indices_.end());
+    }
+    */
+    //Classify for each row.
+    for(int row=0; row < rowCount(features); ++row)
+    {
+        ArrayVector<double>::const_iterator weights;
+
+        //totalWeight == totalVoteCount!
+        double totalWeight = 0.0;
+
+        //Let each tree classify...
+        for(int k=0; k<options_.tree_count_; ++k)
+        {
+            //get weights predicted by single tree
+            visitor_.visit_before_tree_prediction(*this, k,row);
+            weights = trees_[k /*tree_indices_[k]*/].predict(rowVector(features, row),visitor_);
+
+            //update votecount.
+            int weighted = options_.predict_weighted_;
+            for(int l=0; l<ext_param_.class_count_; ++l)
+            {
+                double cur_w = weights[l] * (weighted * (*(weights-1))
+                                           + (1-weighted));
+                prob(row, l) += (T)cur_w;
+
+                //std::cerr << "weights predicted  "<< cur_w << std::endl;
+
+                //every weight in totalWeight.
+                totalWeight += cur_w;
+            }
+            if(stop.after_prediction(weights,
+                                                k,
+                                                rowVector(prob, row),
+                                                totalWeight))
+                       {
+                           break;
+                       }
+        }
+    }
+    prob/= options_.tree_count_;
+
+}
+
 
 //@}
 

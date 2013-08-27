@@ -328,6 +328,130 @@ public:
         return strata_;
     }
 };
+
+template<class LabelType, class T1, class C1, class T2, class C2>
+class Processor<HoughTag,LabelType, T1, C1, T2, C2>
+{
+public:
+
+    typedef Int32 LabelInt;
+    // only views are created - no data copied.
+    MultiArrayView<2, T1, C1>   features_;
+    MultiArrayView<2, T2, C2>   response_;
+    RandomForestOptions const & options_;
+    ProblemSpec<LabelType> const &
+                                ext_param_;
+    // will only be filled if needed
+    MultiArray<2, int>      strata_;
+    bool strata_filled;
+    MultiArray<2, LabelInt>             intLabels_;
+
+
+    // copy the views.
+    template<class T>
+    Processor(  MultiArrayView<2, T1, C1>   features,
+                MultiArrayView<2, T2, C2>   response,
+                RandomForestOptions const & options,
+                ProblemSpec<T>& ext_param)
+    :
+        features_(features),
+        response_(response),
+        options_(options),
+        ext_param_(ext_param)
+    {
+        // set some of the problem specific parameters
+        ext_param.column_count_  = features.shape(1);
+        ext_param.row_count_     = features.shape(0);
+        ext_param.problem_type_  = HOUGHFOREST;
+        ext_param.used_          = true;
+        detail::fill_external_parameters(options, ext_param);
+        vigra_precondition(!detail::contains_nan(features), "Processor(): Feature Matrix "
+                                                           "Contains NaNs");
+        vigra_precondition(!detail::contains_nan(response), "Processor(): Response "
+                                                           "Contains NaNs");
+        vigra_precondition(!detail::contains_inf(features), "Processor(): Feature Matrix "
+                                                           "Contains inf");
+        vigra_precondition(!detail::contains_inf(response), "Processor(): Response "
+                                                            "Contains inf");
+
+        strata_ = MultiArray<2, int> (MultiArrayShape<2>::type(response_.shape(0), 1));
+        ext_param.response_size_ = response.shape(1);
+        ext_param.class_count_ = 0;
+        std::vector<T2> tmp_(ext_param.class_count_, 0);
+
+        ext_param.classes_(tmp_.begin(), tmp_.end());
+
+
+        MultiArrayView<2,int>::difference_type Shp(response.shape(0),1);
+        intLabels_.reshape(Shp);
+
+        //get the class labels
+        if(ext_param.class_count_ == 0)
+        {
+            // fill up a map with the current labels and then create the
+            // integral labels.
+            std::set<T2>                    labelToInt;
+            for(MultiArrayIndex k = 0; k < features.shape(0); ++k)
+                labelToInt.insert(response(k,0));
+            std::vector<T2> tmp_(labelToInt.begin(), labelToInt.end());
+            ext_param.classes_(tmp_.begin(), tmp_.end());
+        }
+
+        for(MultiArrayIndex k = 0; k < features.shape(0); ++k)
+        {
+            if(std::find(ext_param.classes.begin(), ext_param.classes.end(), response(k,0)) == ext_param.classes.end())
+            {
+                throw std::runtime_error("unknown label type");
+            }
+            else
+                intLabels_(k, 0) = std::find(ext_param.classes.begin(), ext_param.classes.end(), response(k,0))
+                                    - ext_param.classes.begin();
+        }
+        // set class weights
+        if(ext_param.class_weights_.size() == 0)
+        {
+            ArrayVector<T2>
+                tmp((std::size_t)ext_param.class_count_,
+                    NumericTraits<T2>::one());
+            ext_param.class_weights(tmp.begin(), tmp.end());
+        }
+
+        // set mtry and msample
+        detail::fill_external_parameters(options, ext_param);
+
+        // set strata
+        strata_ = intLabels_;
+
+    }
+
+
+
+
+
+    /** access preprocessed features
+     */
+    MultiArrayView<2, T1, C1> & features()
+    {
+        return features_;
+    }
+
+    /** access preprocessed response
+     */
+    MultiArrayView<2, T2, C2> & response()
+    {
+        return response_;
+    }
+
+    /** access strata - this is not used currently
+     */
+    MultiArray<2, int> & strata()
+    {
+        return strata_;
+    }
+};
+
+
+
 }
 #endif //VIGRA_RF_PREPROCESSING_HXX
 
