@@ -686,13 +686,11 @@ class Node<e_HoughTerminalNode>
         BT::typeID() = e_ConstProbNode;
     }
 
-
     Node(           BT::T_Container_type const &   topology,
                     BT::P_Container_type const &   param,
                     int                  n             )
                 :   BT(2, topology[1]+1,topology, param, n)
     { }
-
 
     Node( BT & node_)
         :   BT(2, node_.classCount_ +1, node_)

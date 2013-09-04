@@ -1,15 +1,43 @@
-/*
- *  rf_more_splits.hxx
- *  vigra
- *
- *  Created by Luca Fiaschi on 5/2/11.
- *  Copyright 2011 Heidelberg university. All rights reserved.
- *
- */
+/************************************************************************/
+/*                                                                      */
+/*        Copyright 2011-2013 by Luca Fiaschi                           */
+/*                                                                      */
+/*    This file is part of the VIGRA computer vision library.           */
+/*    The VIGRA Website is                                              */
+/*        http://hci.iwr.uni-heidelberg.de/vigra/                       */
+/*    Please direct questions, bug reports, and contributions to        */
+/*        ullrich.koethe@iwr.uni-heidelberg.de    or                    */
+/*        vigra@informatik.uni-hamburg.de                               */
+/*                                                                      */
+/*    Permission is hereby granted, free of charge, to any person       */
+/*    obtaining a copy of this software and associated documentation    */
+/*    files (the "Software"), to deal in the Software without           */
+/*    restriction, including without limitation the rights to use,      */
+/*    copy, modify, merge, publish, distribute, sublicense, and/or      */
+/*    sell copies of the Software, and to permit persons to whom the    */
+/*    Software is furnished to do so, subject to the following          */
+/*    conditions:                                                       */
+/*                                                                      */
+/*    The above copyright notice and this permission notice shall be    */
+/*    included in all copies or substantial portions of the             */
+/*    Software.                                                         */
+/*                                                                      */
+/*    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND    */
+/*    EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES   */
+/*    OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND          */
+/*    NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT       */
+/*    HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,      */
+/*    WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING      */
+/*    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR     */
+/*    OTHER DEALINGS IN THE SOFTWARE.                                   */
+/*                                                                      */
+/************************************************************************/
+
 #ifndef VIGRA_RANDOM_FOREST_MORE_SPLITS_HXX
 #define VIGRA_RANDOM_FOREST_MORE_SPLITS_HXX
 
 #include "rf_split.hxx"
+#include "rf_common.hxx"
 
 #include <boost/random/mersenne_twister.hpp>
 #include <boost/random/uniform_real.hpp>
@@ -27,7 +55,7 @@ using namespace std;
 /** This Functor chooses a random value of a column
  */
 template<class LossTag>
-class BestSplitOfRandomEnsamble
+class BestSplitOfRandomEnsemble
 {
 public:
 
@@ -40,12 +68,12 @@ public:
 	typedef RandomMT19937 Random_t;
 	Random_t random;
 
-	BestSplitOfRandomEnsamble()
+	BestSplitOfRandomEnsemble()
 	{
 	}
 
 	template<class T>
-	BestSplitOfRandomEnsamble(ProblemSpec<T> const & ext) :
+	BestSplitOfRandomEnsemble(ProblemSpec<T> const & ext) :
 		class_weights_(ext.class_weights_), ext_param_(ext), random(RandomSeed)
 	{
 		bestCurrentCounts[0].resize(ext.class_count_);
@@ -53,7 +81,7 @@ public:
 	}
 
 	template<class T>
-	BestSplitOfRandomEnsamble(ProblemSpec<T> const & ext, Random_t & random_) :
+	BestSplitOfRandomEnsemble(ProblemSpec<T> const & ext, Random_t & random_) :
 		class_weights_(ext.class_weights_), ext_param_(ext), random(random_)
 	{
 		bestCurrentCounts[0].resize(ext.class_count_);
@@ -118,7 +146,7 @@ public:
 
 };
 
-typedef ThresholdSplit<BestSplitOfRandomEnsamble<GiniCriterion> >
+typedef ThresholdSplit<BestSplitOfRandomEnsemble<GiniCriterion> >
 		ExtremelyRandomGiniSplit;
 
 
@@ -187,7 +215,6 @@ public:
 
 template<class CriterionFunctor1, class CriterionFunctor2, class Tag = HoughTag>
 class RandomHyperplaneSplit: public SplitBase<Tag>
-
 {
 public:
 
@@ -238,7 +265,6 @@ public:
 		int total = 0;
 		while (ii != region.end_)
 		{
-
 			double current_label = labels(*ii, 0); //nb assumes
 
 			if (current_label >= max_label)
@@ -247,7 +273,6 @@ public:
 			hist[current_label] += 1.0;
 			total += 1.0;
 			++ii;
-
 		}
 
 		hist.resize(max_label + 1);
@@ -269,7 +294,6 @@ public:
 			C2> labels, Region & region, ArrayVector<Region>& childRegions,
 			Random & randint)
 	{
-
 		typedef typename Region::IndexIterator IndexIterator;
 		if (region.size() == 0)
 		{
@@ -452,40 +476,13 @@ public:
 		std::sort(val_set.begin(), val_set.end());
 	}
 
-	/*
-	 template<class Random>
-	 void generateTest(Node<i_HyperplaneNode>& test, Random& randint)
-	 {
-
-	 test.column_data()[0]=ndimensions;
-
-	 for (int i = 0; i < ndimensions; i++)
-	 {
-	 test.columns_begin()[i] = randint(SB::ext_param_.column_count_);
-
-	 //test.column_data()[i+1]=randint(SB::ext_param_.column_count_);
-
-	 if ((randint(2) + 1) % 2)
-	 {
-	 test.weights()[i] = 1;
-
-	 }
-	 else
-	 test.weights()[i] = -1;
-	 }
-	 }
-	 */
 	template<class Random>
 	void generateTest(SplitParams& test, Random& randint)
 	{
-
-
 		for (int i = 0; i < ndimensions; i++)
 		{
 
 			test.columns[i] = randint(SB::ext_param_.column_count_);
-
-
 
 			if ((randint(2) + 1) % 2)
 			{
@@ -496,8 +493,6 @@ public:
 				test.weights[i] = -1;
 		}
 	}
-
-
 
 	template<class Region>
 	void splitTheRegion(std::vector<Vals>& valSet, Region& region,
@@ -517,11 +512,9 @@ public:
 		}
 		++index;
 
-
 		temp_left.setRange(region.begin(), region.begin() + index);
 
 		temp_right.setRange(region.begin() + index, region.end());
-
 	}
 
 	template<class Region, class T2, class C2>
@@ -548,7 +541,7 @@ public:
 			double left_gini = left.increment(temp_left.begin(),
 					temp_left.end());
 
-			//td::cout << "The left gini is " << left_gini << std::endl;
+			//std::cout << "The left gini is " << left_gini << std::endl;
 			//std::cout << "left region size is" << temp_left.size() << std::endl;
 			//temp_left.printRange();
 
@@ -903,21 +896,17 @@ public:
 			splitmode = 1;
 		}
 
-
-
 		if (splitmode == 0)
 		{
 			//std::cout << "minimize the Gini index" << std::endl;
 			return findBestSplitClassification(features, labels, region,
 					childRegions, randint);
-
 		}
 		else
 		{
 			//std::cout << "minimize the Variance" << std::endl;
 			return findBestSplitRegression(features, labels, region,
 					childRegions, randint);
-
 		}
 
 	}

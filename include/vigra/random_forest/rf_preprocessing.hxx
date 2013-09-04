@@ -330,7 +330,7 @@ public:
 };
 
 template<class LabelType, class T1, class C1, class T2, class C2>
-class Processor<HoughTag,LabelType, T1, C1, T2, C2>
+class Processor<HoughTag, LabelType, T1, C1, T2, C2>
 {
 public:
 
@@ -421,12 +421,7 @@ public:
 
         // set strata
         strata_ = intLabels_;
-
     }
-
-
-
-
 
     /** access preprocessed features
      */
@@ -449,8 +444,6 @@ public:
         return strata_;
     }
 };
-
-
 
 }
 #endif //VIGRA_RF_PREPROCESSING_HXX

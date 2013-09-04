@@ -1,6 +1,8 @@
 #ifndef RF_EARLY_STOPPING_P_HXX
 #define RF_EARLY_STOPPING_P_HXX
 #include <cmath>
+#include <ostream>
+#include <vigra/multi_array.hxx>
 #include "rf_common.hxx"
 
 namespace vigra
@@ -425,27 +427,22 @@ class DepthStopping: public StopBase
 public:
     int max_depth_;
 
-    DepthStopping()
-    {
-        max_depth_ = -1;
-    }
-
-    DepthStopping(int depth) :
+    DepthStopping(int depth=-1) :
         max_depth_(depth)
     {
     }
 
     template<class T>
-    void set_external_parameters(ProblemSpec<T> const &, int /*
-                                                                tree_count */= 0, bool /* is_weighted_ */= false)
+    void set_external_parameters(ProblemSpec<T> const &,
+            int /* tree_count */= 0, bool /* is_weighted_ */= false)
     {
     }
 
     template<class Region>
     bool operator()(Region& region)
     {
-        std::cout << "region depth is " << region.depth() << ", max depth "
-            << double(max_depth_) << std::endl;
+        //std::cout << "region depth is " << region.depth() << ", max depth "
+        //    << double(max_depth_) << std::endl;
         if (region.depth() > max_depth_ + 1)
             throw std::runtime_error("violation in the stopping criterion");
 
@@ -467,20 +464,14 @@ public:
     int max_depth_;
     int min_size_;
 
-    DepthAndSizeStopping()
-    {
-        max_depth_ = -1;
-        min_size_ = 0;
-    }
-
-    DepthAndSizeStopping(int depth, int size) :
+    DepthAndSizeStopping(int depth =-1, int size =0) :
         max_depth_(depth), min_size_(size)
     {
     }
 
     template<class T>
-    void set_external_parameters(ProblemSpec<T> const &, int /*
-                                                                tree_count */= 0, bool /* is_weighted_ */= false)
+    void set_external_parameters(ProblemSpec<T> const &,
+            int /* tree_count */= 0, bool /* is_weighted_ */= false)
     {
     }
 

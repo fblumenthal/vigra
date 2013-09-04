@@ -860,8 +860,6 @@ public:
     template<class Iter>
     double increment (Iter begin, Iter end)
     {
-
-
         for(Iter iter = begin; iter != end; ++iter)
         {
             if (labels_(*iter,0)!=0)
@@ -880,9 +878,6 @@ public:
                     //std::cerr << "angle " << labels_(*iter, ii+1) << std::endl;
                     //std::cout  << tmp_[ii] << " " ;
 
-
-
-
                     mean_[ii] += f*tmp_[ii];
 
                     variance_[ii] += f1*sq(tmp_[ii]);
@@ -892,12 +887,10 @@ public:
 
         }
 
-
         double res = std::accumulate(variance_.begin(),
                 variance_.end(),
                 0.0,
                 std::plus<double>());
-
 
         //std::cerr << res << "  ) = ";
         return res;
@@ -906,12 +899,8 @@ public:
     template<class Iter>
     double decrement (Iter begin, Iter end)
     {
-
-
-
         for(Iter iter = begin; iter != end; ++iter)
         {
-
             if(labels_(*iter,0)!=0)
             {
                 --count_;
@@ -928,26 +917,19 @@ public:
 
                     tmp_[ii] = labels_(*iter, ii+1) - mean_[ii];
 
-
-
                     variance_[ii] -= f1*sq(tmp_[ii]);
                 }
-
-
             }
         }
-
 
         double res = std::accumulate(variance_.begin(),
                 variance_.end(),
                 0.0,
                 std::plus<double>());
 
-
         //std::cerr << res << "  ) = ";
         return res;
     }
-
 
     template<class Iter, class Resp_t>
     double init (Iter begin, Iter end, Resp_t resp, bool flag=true)
@@ -960,7 +942,6 @@ public:
         return 0;
     }
 
-
     ArrayVector<double> const & response()
     {
         return mean_;
@@ -971,7 +952,6 @@ public:
         mean_.init(0.0);
         variance_.init(0.0);
         count_ = 0;
-
     }
 };
 
@@ -1042,8 +1022,6 @@ public:
 
         for(Iter iter = begin; iter != end; ++iter)
         {
-
-
             --count_;
 
             double f  = 1.0 / count_,
@@ -1062,16 +1040,10 @@ public:
             }
         }
 
-
-
-
-
-
         double res = std::accumulate(variance_.begin(),
                 variance_.end(),
                 0.0,
                 std::plus<double>());
-
 
         //std::cerr << res << "  ) = ";
         return res;
@@ -1089,7 +1061,6 @@ public:
         return 0;
     }
 
-
     ArrayVector<double> const & response()
     {
         return mean_;
@@ -1100,7 +1071,6 @@ public:
         mean_.init(0.0);
         variance_.init(0.0);
         count_ = 0;
-
     }
 };
 
@@ -1147,7 +1117,6 @@ public:
             {
                 //std::cerr<< labels_(*iter, ii) << " ahdhdh " ;
 
-
                 tmp_[ii] = labels_(*iter, ii) - mean_[ii];
 
                 mean_[ii] += f*tmp_[ii];
@@ -1159,12 +1128,10 @@ public:
 
         }
 
-
         double res = std::accumulate(variance_.begin(),
                 variance_.end(),
                 0.0,
                 std::plus<double>());
-
 
         //std::cerr << res << "  ) = ";
         return res;
@@ -1176,8 +1143,6 @@ public:
 
         for(Iter iter = begin; iter != end; ++iter)
         {
-
-
             --count_;
 
             double f  = 1.0 / count_,
@@ -1213,7 +1178,6 @@ public:
         }
         return 0;
     }
-
 
     ArrayVector<double> const & response()
     {
@@ -1275,7 +1239,6 @@ public:
                 mean_[ii] += f*tmp_[ii];
 
             }
-
         }
 
         for(int ii = 0; ii < labels_.shape(1); ++ii) variance_[ii]=0;
@@ -1350,7 +1313,6 @@ public:
         true_begin_=begin;
         true_end_=end;
         return this->increment(begin, end);
-
     }
 
 
@@ -1364,7 +1326,6 @@ public:
         mean_.init(0.0);
         variance_.init(0.0);
         count_ = 0;
-
     }
 };
 
