@@ -843,7 +843,7 @@ public:
     ArrayVector <double>    variance_;
     ArrayVector <double>    tmp_;
     size_t                  count_;
-    int*					end_;
+    int*                    end_;
 
     template<class T>
     RegressionForestCounter3(DataSource const & labels,
@@ -968,7 +968,7 @@ public:
     ArrayVector <double>    variance_;
     ArrayVector <double>    tmp_;
     size_t                  count_;
-    int*					end_;
+    int*                    end_;
 
     template<class T>
     RegressionForestCounterTest(DataSource const & labels,
@@ -1089,7 +1089,7 @@ public:
     ArrayVector <double>    variance_;
     ArrayVector <double>    tmp_;
     size_t                  count_;
-    int*					end_;
+    int*                    end_;
 
     template<class T>
     RegressionForestCounterL2(DataSource const & labels,
@@ -1208,9 +1208,9 @@ public:
     ArrayVector <double>    variance_;
     ArrayVector <double>    tmp_;
     size_t                  count_;
-    int*					end_;
-    int*					true_begin_;
-    int*					true_end_;
+    int*                    end_;
+    int*                    true_begin_;
+    int*                    true_end_;
     template<class T>
     RegressionForestCounterL1(DataSource const & labels,
             ProblemSpec<T> const & ext_)
@@ -1256,10 +1256,10 @@ public:
         }
 
 
-        //		double res = std::accumulate(variance_.begin(),
-        //									 variance_.end(),
-        //									 0.0,
-        //									 std::plus<double>());
+        //        double res = std::accumulate(variance_.begin(),
+        //                                     variance_.end(),
+        //                                     0.0,
+        //                                     std::plus<double>());
 
         double res = *std::max_element(variance_.begin(), variance_.end());
         //std::cerr << res << "  ) = ";
@@ -1297,11 +1297,11 @@ public:
         }
 
         //
-        //		double res = std::accumulate(variance_.begin(),
-        //									 variance_.end(),
-        //									 0.0,
-        //									 std::plus<double>());
-        //		//std::cerr << res << "  ) = ";
+        //        double res = std::accumulate(variance_.begin(),
+        //                                     variance_.end(),
+        //                                     0.0,
+        //                                     std::plus<double>());
+        //        //std::cerr << res << "  ) = ";
         double res = *std::max_element(variance_.begin(), variance_.end());
         return res;
     }
@@ -1701,9 +1701,9 @@ typedef  ThresholdSplit<BestGiniOfColumn<GiniCriterion> >                      G
 typedef  ThresholdSplit<BestGiniOfColumn<EntropyCriterion> >                 EntropySplit;
 typedef  ThresholdSplit<BestGiniOfColumn<LSQLoss>, RegressionTag>              RegressionSplit;
 
-typedef  ThresholdSplit<BestGiniOfColumn<TestLSQLoss>, RegressionTag>         	 TestRegressionSplit;
-typedef  ThresholdSplit<BestGiniOfColumn<L2LSQLoss>, RegressionTag>         	 RegressionSplitL2;
-typedef  ThresholdSplit<BestGiniOfColumn<L1LSQLoss>, RegressionTag>         	 RegressionSplitL1;
+typedef  ThresholdSplit<BestGiniOfColumn<TestLSQLoss>, RegressionTag>              TestRegressionSplit;
+typedef  ThresholdSplit<BestGiniOfColumn<L2LSQLoss>, RegressionTag>              RegressionSplitL2;
+typedef  ThresholdSplit<BestGiniOfColumn<L1LSQLoss>, RegressionTag>              RegressionSplitL1;
 
 namespace rf
 {

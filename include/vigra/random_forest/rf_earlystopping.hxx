@@ -479,9 +479,9 @@ public:
     bool operator()(Region& region)
     {
         //std::cout << "region depth is " << region.depth() << ", max depth "
-        //		<< max_depth_ << std::endl;
+        //        << max_depth_ << std::endl;
         //std::cout << "The region size is " << region.size() << ", min size "
-        //		<< min_size_ << std::endl;
+        //        << min_size_ << std::endl;
 
         //FIXME this is not clean
         if (region.size()>60 && region.depth() < max_depth_*1.5)

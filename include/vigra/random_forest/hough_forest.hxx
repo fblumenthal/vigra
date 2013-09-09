@@ -58,285 +58,285 @@ public:
     typedef std::pair<int, int> LeafType;
     typedef int SampleType;
 
-	vigra::rf::visitors::IndexVisitorTraining visitor_learning;
-	vigra::rf::visitors::IndexVisitorPrediction visitor_prediction;
+    vigra::rf::visitors::IndexVisitorTraining visitor_learning;
+    vigra::rf::visitors::IndexVisitorPrediction visitor_prediction;
 
-	int dim_labels;
-	int dim_features;
+    int dim_labels;
+    int dim_features;
 
-	int ntr_samples;
-	int nte_samples;
+    int ntr_samples;
+    int nte_samples;
 
-	DepthAndSizeStopping stop;
+    DepthAndSizeStopping stop;
 
-	MultiArray<2,LabelType> tr_labels;
+    MultiArray<2,LabelType> tr_labels;
 
-	int seed;
+    int seed;
 
-	typedef vigra::RandomMT19937 RandomNumberGenerator;
+    typedef vigra::RandomMT19937 RandomNumberGenerator;
 
-	Hough_Forest(RandomForestOptions options, int max_depth, int min_size, int seed_=-1) :
-		RandomForest<LabelType, HoughTag> (options), options_(options),
+    Hough_Forest(RandomForestOptions options, int max_depth, int min_size, int seed_=-1) :
+        RandomForest<LabelType, HoughTag> (options), options_(options),
         stop(max_depth, min_size), seed(seed_)
-	{
+    {
         initParams();
-	}
+    }
 
 
-	Hough_Forest(RandomForestOptions options) :
-		RandomForest<LabelType, HoughTag> (options), options_(options),seed(-1)
-	{
+    Hough_Forest(RandomForestOptions options) :
+        RandomForest<LabelType, HoughTag> (options), options_(options),seed(-1)
+    {
         initParams();
-	}
+    }
 
-	Hough_Forest(int treeCount) :
-		RandomForest<LabelType, HoughTag> (
-				vigra::RandomForestOptions().tree_count(treeCount)),seed(-1)
-	{
+    Hough_Forest(int treeCount) :
+        RandomForest<LabelType, HoughTag> (
+                vigra::RandomForestOptions().tree_count(treeCount)),seed(-1)
+    {
         initParams();
-	}
+    }
 
     void initParams()
     {
-		dim_labels = 0;
-		dim_features = 0;
-		ntr_samples = 0;
-		nte_samples = 0;
+        dim_labels = 0;
+        dim_features = 0;
+        ntr_samples = 0;
+        nte_samples = 0;
     }
 
-	//FIXME: Random Gini and Random Entropy work in general a bit better BUT the implementation makes them much slower
-	// the implementation of the split functor should be completely reworked
-	void learnRandomGini(const MultiArrayView<2,LabelType,C>& train_data,
+    //FIXME: Random Gini and Random Entropy work in general a bit better BUT the implementation makes them much slower
+    // the implementation of the split functor should be completely reworked
+    void learnRandomGini(const MultiArrayView<2,LabelType,C>& train_data,
             const MultiArrayView<2,LabelType,C>& train_labels)
-	{
-		ntr_samples = train_data.shape(0);
-		dim_labels = train_labels.shape(1);
-		dim_features = train_data.shape(1);
+    {
+        ntr_samples = train_data.shape(0);
+        dim_labels = train_labels.shape(1);
+        dim_features = train_data.shape(1);
 
-		tr_labels = train_labels;
+        tr_labels = train_labels;
 
-		rf::visitors::RandomForestProgressVisitor progressvisit;
+        rf::visitors::RandomForestProgressVisitor progressvisit;
 
-		vigra::rf::split::HoughSplitRandomGini rsplit;
+        vigra::rf::split::HoughSplitRandomGini rsplit;
 
-		if (seed<0)
-		{
-		this->learn(train_data, train_labels,
-				create_visitor((*this).visitor_learning, progressvisit),
-				rsplit, stop);
-		}
-		else
-		{
-			RandomNumberGenerator rng(seed);
-			this->learn(train_data, train_labels,
-					create_visitor((*this).visitor_learning, progressvisit),
-					rsplit, stop,rng);
-		}
-	}
+        if (seed<0)
+        {
+        this->learn(train_data, train_labels,
+                create_visitor((*this).visitor_learning, progressvisit),
+                rsplit, stop);
+        }
+        else
+        {
+            RandomNumberGenerator rng(seed);
+            this->learn(train_data, train_labels,
+                    create_visitor((*this).visitor_learning, progressvisit),
+                    rsplit, stop,rng);
+        }
+    }
 
 
-	void learnRandomEntropy(const MultiArrayView<2,LabelType,C>& train_data,
+    void learnRandomEntropy(const MultiArrayView<2,LabelType,C>& train_data,
             const MultiArrayView<2,LabelType,C>& train_labels)
-	{
-		ntr_samples = train_data.shape(0);
-		dim_labels = train_labels.shape(1);
-		dim_features = train_data.shape(1);
+    {
+        ntr_samples = train_data.shape(0);
+        dim_labels = train_labels.shape(1);
+        dim_features = train_data.shape(1);
 
-		tr_labels = train_labels;
+        tr_labels = train_labels;
 
-		rf::visitors::RandomForestProgressVisitor progressvisit;
+        rf::visitors::RandomForestProgressVisitor progressvisit;
 
-		vigra::rf::split::HoughSplitRandomEntropy rsplit;
+        vigra::rf::split::HoughSplitRandomEntropy rsplit;
 
-		if (seed<0)
-		{
-		this->learn(train_data, train_labels,
-				create_visitor((*this).visitor_learning, progressvisit),
-				rsplit, stop);
-		}
-		else
-		{
-			RandomNumberGenerator rng(seed);
-			this->learn(train_data, train_labels,
-					create_visitor((*this).visitor_learning, progressvisit),
-					rsplit, stop,rng);
-		}
-	}
-
-
-	void learnOrthogonalEntropy(const MultiArrayView<2,LabelType,C>& train_data, const MultiArrayView<2,LabelType,C>& train_labels)
-	{
-		ntr_samples = train_data.shape(0);
-		dim_labels = train_labels.shape(1);
-		dim_features = train_data.shape(1);
-
-		tr_labels = train_labels;
-
-		rf::visitors::RandomForestProgressVisitor progressvisit;
-
-		vigra::rf::split::HoughSplitEntropy rsplit;
+        if (seed<0)
+        {
+        this->learn(train_data, train_labels,
+                create_visitor((*this).visitor_learning, progressvisit),
+                rsplit, stop);
+        }
+        else
+        {
+            RandomNumberGenerator rng(seed);
+            this->learn(train_data, train_labels,
+                    create_visitor((*this).visitor_learning, progressvisit),
+                    rsplit, stop,rng);
+        }
+    }
 
 
-		if (seed<0)
-		{
-		this->learn(train_data, train_labels,
-				create_visitor((*this).visitor_learning, progressvisit),
-				rsplit, stop);
-		}
-		else
-		{
-			RandomNumberGenerator rng(seed);
-			this->learn(train_data, train_labels,
-					create_visitor((*this).visitor_learning, progressvisit),
-					rsplit, stop,rng);
+    void learnOrthogonalEntropy(const MultiArrayView<2,LabelType,C>& train_data, const MultiArrayView<2,LabelType,C>& train_labels)
+    {
+        ntr_samples = train_data.shape(0);
+        dim_labels = train_labels.shape(1);
+        dim_features = train_data.shape(1);
 
-		}
+        tr_labels = train_labels;
 
-	}
+        rf::visitors::RandomForestProgressVisitor progressvisit;
+
+        vigra::rf::split::HoughSplitEntropy rsplit;
 
 
-	void learnOrthogonalGini(const MultiArrayView<2,LabelType,C>& train_data, const MultiArrayView<2,LabelType,C>& train_labels)
-	{
-		ntr_samples = train_data.shape(0);
-		dim_labels = train_labels.shape(1);
-		dim_features = train_data.shape(1);
+        if (seed<0)
+        {
+        this->learn(train_data, train_labels,
+                create_visitor((*this).visitor_learning, progressvisit),
+                rsplit, stop);
+        }
+        else
+        {
+            RandomNumberGenerator rng(seed);
+            this->learn(train_data, train_labels,
+                    create_visitor((*this).visitor_learning, progressvisit),
+                    rsplit, stop,rng);
 
-		tr_labels = train_labels;
+        }
 
-		rf::visitors::RandomForestProgressVisitor progressvisit;
-
-		vigra::rf::split::HoughSplitGini rsplit;
+    }
 
 
-		if (seed<0)
-		{
-		this->learn(train_data, train_labels,
-				create_visitor((*this).visitor_learning, progressvisit),
-				rsplit, stop);
-		}
-		else
-		{
-			RandomNumberGenerator rng(seed);
-			this->learn(train_data, train_labels,
-					create_visitor((*this).visitor_learning, progressvisit),
-					rsplit, stop,rng);
+    void learnOrthogonalGini(const MultiArrayView<2,LabelType,C>& train_data, const MultiArrayView<2,LabelType,C>& train_labels)
+    {
+        ntr_samples = train_data.shape(0);
+        dim_labels = train_labels.shape(1);
+        dim_features = train_data.shape(1);
+
+        tr_labels = train_labels;
+
+        rf::visitors::RandomForestProgressVisitor progressvisit;
+
+        vigra::rf::split::HoughSplitGini rsplit;
+
+
+        if (seed<0)
+        {
+        this->learn(train_data, train_labels,
+                create_visitor((*this).visitor_learning, progressvisit),
+                rsplit, stop);
+        }
+        else
+        {
+            RandomNumberGenerator rng(seed);
+            this->learn(train_data, train_labels,
+                    create_visitor((*this).visitor_learning, progressvisit),
+                    rsplit, stop,rng);
             visitor_learning.save("OGlearnvisit_new.h5", "/learn");
 
-		}
+        }
 
-	}
+    }
 
-	template<class result, class A>
-	void predict(const A& test_data, result res)
-	{
-		visitor_prediction.clear();
+    template<class result, class A>
+    void predict(const A& test_data, result res)
+    {
+        visitor_prediction.clear();
 
-		return this->predictProbabilities(
-				test_data, res, rf_default(), (*this).visitor_prediction);
-	}
+        return this->predictProbabilities(
+                test_data, res, rf_default(), (*this).visitor_prediction);
+    }
 
-	/**
-	 * This is the function that mekes the prediction of the hough forests
-	 *
-	 * @param test_data Must be a set of patches for which we want to predict reshaped as a matrix N*nfeat (can be all patches in the image)
-	 * @param patch_centers (must store the centre of each patch N*2
-	 * @param imgwidth width of the image we want to predict
-	 * @param imgheight heigth of the image we want to predict
-	 * @param factor gain factor of the image to predict (contrast)
-	 * @param result *initialized result
-	 */
-	template<class T2, class C2, class T3, class C3>
-	void predictOnImage(MultiArrayView<2, T2, C2> test_data, MultiArrayView<2, T2,
-			C2> patch_centers, int imgwidth, int imgheight,int factor,
-			MultiArrayView<2, T3, C3> result)
-	{
+    /**
+     * This is the function that mekes the prediction of the hough forests
+     *
+     * @param test_data Must be a set of patches for which we want to predict reshaped as a matrix N*nfeat (can be all patches in the image)
+     * @param patch_centers (must store the centre of each patch N*2
+     * @param imgwidth width of the image we want to predict
+     * @param imgheight heigth of the image we want to predict
+     * @param factor gain factor of the image to predict (contrast)
+     * @param result *initialized result
+     */
+    template<class T2, class C2, class T3, class C3>
+    void predictOnImage(MultiArrayView<2, T2, C2> test_data, MultiArrayView<2, T2,
+            C2> patch_centers, int imgwidth, int imgheight,int factor,
+            MultiArrayView<2, T3, C3> result)
+    {
 
-		typedef std::vector<double> Point;
+        typedef std::vector<double> Point;
 
-		//FIXME: currently the algorithm assumes that result shape is imgheight,imgwidth
-		// problably it is redundand to pass this two parameters from outside
-		if (result.shape(0) != imgheight or result.shape(1) != imgwidth)
-			throw std::runtime_error("The result has a wrong shape!, shoudl be (imgheight,imgwidth)");
+        //FIXME: currently the algorithm assumes that result shape is imgheight,imgwidth
+        // problably it is redundand to pass this two parameters from outside
+        if (result.shape(0) != imgheight or result.shape(1) != imgwidth)
+            throw std::runtime_error("The result has a wrong shape!, shoudl be (imgheight,imgwidth)");
 
-		if (patch_centers.shape(0) != test_data.shape(0))
-			throw std::runtime_error("shape mismatch");
+        if (patch_centers.shape(0) != test_data.shape(0))
+            throw std::runtime_error("shape mismatch");
 
-		//FIXME in the far future, Generalize this function to multilabel Hough Forest
-		MultiArrayShape<2>::type sh(test_data.shape(0), 2);
+        //FIXME in the far future, Generalize this function to multilabel Hough Forest
+        MultiArrayShape<2>::type sh(test_data.shape(0), 2);
 
-		MultiArray<2, T> dummy(sh);
+        MultiArray<2, T> dummy(sh);
 
-		this->predict(test_data, dummy);
-
-
-		int count = 0;
-		int inscount = 0;
-
-		//Loop on the samples
-
-		for (int i = 0; i < test_data.shape(0); i++)
-		{
-			std::vector<LeafType>& leafs =
-					(this->visitor_prediction).mapping[i];
-
-			int ox = patch_centers(i, 0); //patch centers offsets vectors
-			int oy = patch_centers(i, 1);
-
-			double nleafs = leafs.size(); // number of leafs in the associated node
-			//std::cout << "N leafs " << nleafs << std::endl;
+        this->predict(test_data, dummy);
 
 
-			for (std::vector<LeafType>::iterator it = leafs.begin(); it
-					!= leafs.end(); it++)
-			{
-				std::vector<Point>& current_points =
-						(this->visitor_learning).mapping[*it];
+        int count = 0;
+        int inscount = 0;
 
-				double prob = (this->visitor_learning).mapping_to_prob[*it];
-				//std::cout<<"the prob is " << prob << std::endl;
+        //Loop on the samples
 
-				std::vector<Point>::iterator ii;
+        for (int i = 0; i < test_data.shape(0); i++)
+        {
+            std::vector<LeafType>& leafs =
+                    (this->visitor_prediction).mapping[i];
 
-				double npoints = current_points.size();
+            int ox = patch_centers(i, 0); //patch centers offsets vectors
+            int oy = patch_centers(i, 1);
 
-				for (ii = current_points.begin(); ii != current_points.end(); ++ii)
-				{
+            double nleafs = leafs.size(); // number of leafs in the associated node
+            //std::cout << "N leafs " << nleafs << std::endl;
 
-					int x = (*ii)[0] + ox;
-					int y = (*ii)[1] + oy;
 
-					//std::cout<< "The offset is " <<x << " " << y << std::endl;
+            for (std::vector<LeafType>::iterator it = leafs.begin(); it
+                    != leafs.end(); it++)
+            {
+                std::vector<Point>& current_points =
+                        (this->visitor_learning).mapping[*it];
 
-					//std::cout<< " ( " << x  << ", " << y << " ) " ;
+                double prob = (this->visitor_learning).mapping_to_prob[*it];
+                //std::cout<<"the prob is " << prob << std::endl;
 
-					if ((0 <= x) & (x < imgwidth) & (0 <= y) & (y < imgheight))
-					{
-						//res(y,x)+=prob/npoints/nleafs;
-						//res(y,x)+=prob/npoints/nleafs*100;
+                std::vector<Point>::iterator ii;
 
-						//if (prob > 1)
-						//	throw std::runtime_error("prob>1");
+                double npoints = current_points.size();
 
-						//if (prob < 0)
-						//	throw std::runtime_error("prob<0");
-						//std::cerr << x  << ", ";
+                for (ii = current_points.begin(); ii != current_points.end(); ++ii)
+                {
 
-						result(y, x) += factor * prob / (npoints * nleafs +1e-42);
+                    int x = (*ii)[0] + ox;
+                    int y = (*ii)[1] + oy;
 
-						inscount++;
-					}
+                    //std::cout<< "The offset is " <<x << " " << y << std::endl;
 
-					//else
-					//{
-					//std::cout << "outside" << x << " " << y << std::endl;
-					//	++count;
-					//}
-				}
-			}
-		}
-		//std::cout << "the outside vote count is " << count << std::endl;
-		//std::cout << "the inside vote count is " << inscount << std::endl;
-	}
+                    //std::cout<< " ( " << x  << ", " << y << " ) " ;
+
+                    if ((0 <= x) & (x < imgwidth) & (0 <= y) & (y < imgheight))
+                    {
+                        //res(y,x)+=prob/npoints/nleafs;
+                        //res(y,x)+=prob/npoints/nleafs*100;
+
+                        //if (prob > 1)
+                        //    throw std::runtime_error("prob>1");
+
+                        //if (prob < 0)
+                        //    throw std::runtime_error("prob<0");
+                        //std::cerr << x  << ", ";
+
+                        result(y, x) += factor * prob / (npoints * nleafs +1e-42);
+
+                        inscount++;
+                    }
+
+                    //else
+                    //{
+                    //std::cout << "outside" << x << " " << y << std::endl;
+                    //    ++count;
+                    //}
+                }
+            }
+        }
+        //std::cout << "the outside vote count is " << count << std::endl;
+        //std::cout << "the inside vote count is " << inscount << std::endl;
+    }
 };
 
 #ifdef HasHDF5
@@ -374,13 +374,13 @@ bool hf_saveToHDF5(const Hough_Forest<LabelType,T,C> &Hf,
     if(!boost::filesystem::exists(fname))
         throw std::runtime_error("File exists!");
 
-	rf_export_HDF5(Hf, fname, "forest");
+    rf_export_HDF5(Hf, fname, "forest");
 
-	Hf.visitor_learning.save(fname,"parameters/vLearning");
+    Hf.visitor_learning.save(fname,"parameters/vLearning");
 
-	writeHDF5(fname.c_str(),"parameters/tr_labels",Hf.tr_labels);
+    writeHDF5(fname.c_str(),"parameters/tr_labels",Hf.tr_labels);
 
-	return 1;
+    return 1;
 }
 
 #endif // HasHDF5
