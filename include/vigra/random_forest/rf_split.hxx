@@ -667,10 +667,14 @@ class ImpurityLoss
 
         
         template<class Iter, class Resp_t>
-        double init (Iter begin, Iter end, Resp_t resp)
+        double init (Iter begin, Iter end, Resp_t resp, bool flag=true)
         {
-            reset();
-            return this->increment(begin, end);
+            if(flag)
+            {
+                reset();
+                return this->increment(begin, end);
+            }
+            return 0;
             
         }
         
@@ -803,10 +807,13 @@ public:
     }*/
 
     template<class Iter, class Resp_t>
-    double init (Iter begin, Iter end, Resp_t resp)
+    double init (Iter begin, Iter end, Resp_t resp, bool flag=true)
     {
-        reset();
-        return this->increment(begin, end, resp);
+        if(flag) {
+            reset();
+            return this->increment(begin, end, resp);
+        }
+        return 0;
     }
     
 
