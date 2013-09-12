@@ -595,33 +595,45 @@ class ImpurityLoss
         ArrayVector <double>    variance_;
         ArrayVector <double>    tmp_;
         size_t                  count_;
-        int*                    end_;
-        
+
         template<class T>
         RegressionForestCounter(DataSource const & labels, 
                                 ProblemSpec<T> const & ext_)
-        :
+        : // c++11 allows us to reduce the following lines to only one
+          // RegressionForestCounter<DataSource>(labels, ext_.response_size_)
         labels_(labels),
         mean_(ext_.response_size_, 0.0),
         variance_(ext_.response_size_, 0.0),
         tmp_(ext_.response_size_),
         count_(0)
         {}
-        
+
+        // This constructor is used by derived classes to initialize members
+        // of RegressionForestCounter.
+        RegressionForestCounter(DataSource const & labels,
+                MultiArrayIndex size)
+            :
+                labels_(labels),
+                mean_(size, 0.0),
+                variance_(size, 0.0),
+                tmp_(size),
+                count_(0)
+        {}
+
         template<class Iter>
         double increment (Iter begin, Iter end)
         {
             for(Iter iter = begin; iter != end; ++iter)
             {
                 ++count_;
-                for(unsigned int ii = 0; ii < mean_.size(); ++ii)
-                    tmp_[ii] = labels_(*iter, ii) - mean_[ii]; 
                 double f  = 1.0 / count_,
                 f1 = 1.0 - f;
                 for(unsigned int ii = 0; ii < mean_.size(); ++ii)
+                {
+                    tmp_[ii] = labels_(*iter, ii) - mean_[ii];
                     mean_[ii] += f*tmp_[ii]; 
-                for(unsigned int ii = 0; ii < mean_.size(); ++ii)
                     variance_[ii] += f1*sq(tmp_[ii]);
+                }
             }
             double res = std::accumulate(variance_.begin(), 
                                          variance_.end(),
@@ -692,49 +704,28 @@ class ImpurityLoss
         }
     };
     
-    
 template <class DataSource>
-class RegressionForestCounter2
+class RegressionForestCounter2 : public RegressionForestCounter<DataSource>
 {
+    using RegressionForestCounter<DataSource>::labels_;
+    using RegressionForestCounter<DataSource>::mean_;
+    using RegressionForestCounter<DataSource>::variance_;
+    using RegressionForestCounter<DataSource>::tmp_;
+    using RegressionForestCounter<DataSource>::count_;
 public:
-    typedef MultiArrayShape<2>::type Shp;
-    DataSource const &      labels_;
-    ArrayVector <double>    mean_;
-    ArrayVector <double>    variance_;
-    ArrayVector <double>    tmp_;
-    size_t                  count_;
-
     template<class T>
-    RegressionForestCounter2(DataSource const & labels, 
-                            ProblemSpec<T> const & ext_)
-    :
-        labels_(labels),
-        mean_(ext_.response_size_, 0.0),
-        variance_(ext_.response_size_, 0.0),
-        tmp_(ext_.response_size_),
-        count_(0)
-    {}
-    
+    RegressionForestCounter2(DataSource const & labels,
+            ProblemSpec<T> const & ext_) :
+        RegressionForestCounter<DataSource>(labels, ext_)
+    {
+    }
+
     template<class Iter>
     double increment (Iter begin, Iter end)
     {
-        for(Iter iter = begin; iter != end; ++iter)
-        {
-            ++count_;
-            for(int ii = 0; ii < mean_.size(); ++ii)
-                tmp_[ii] = labels_(*iter, ii) - mean_[ii]; 
-            double f  = 1.0 / count_,
-                   f1 = 1.0 - f;
-            for(int ii = 0; ii < mean_.size(); ++ii)
-                mean_[ii] += f*tmp_[ii]; 
-            for(int ii = 0; ii < mean_.size(); ++ii)
-                variance_[ii] += f1*sq(tmp_[ii]);
-        }
-        double res = std::accumulate(variance_.begin(), 
-                               variance_.end(),
-                               0.0,
-                               std::plus<double>())
-                /((count_ == 1)? 1:(count_ -1));
+        double res = RegressionForestCounter<DataSource>::increment(begin,
+                end)/
+            ((count_ == 1)? 1:(count_ -1));
         //std::cerr << res << "  ) = ";
         return res;
     }
@@ -747,12 +738,12 @@ public:
             double f  = 1.0 / count_,
                    f1 = 1.0 - f;
             for(int ii = 0; ii < mean_.size(); ++ii)
-                mean_[ii] = (mean_[ii] - f*labels_(*iter,ii))/(1-f); 
+                mean_[ii] = (mean_[ii] - f*labels_(*iter,ii))/(1-f);
             for(int ii = 0; ii < mean_.size(); ++ii)
                 variance_[ii] -= f1*sq(labels_(*iter,ii) - mean_[ii]);
             --count_;
         }
-        double res =  std::accumulate(variance_.begin(), 
+        double res =  std::accumulate(variance_.begin(),
                                variance_.end(),
                                0.0,
                                std::plus<double>())
@@ -806,55 +797,40 @@ public:
                 /(count_ -1);
     }*/
 
+    // This function is identical to that of the base class,
+    // but it cannot be removed. Since in that case, the increment()
+    // method of the base class will get called and using virtual
+    // functions is not an option.
     template<class Iter, class Resp_t>
     double init (Iter begin, Iter end, Resp_t resp, bool flag=true)
     {
-        if(flag) {
-            reset();
-            return this->increment(begin, end, resp);
+        if (flag)
+        {
+            this->reset();
+            return this->increment(begin, end);
         }
         return 0;
     }
-    
-
-    ArrayVector<double> const & response()
-    {
-        return mean_;
-    }
-
-    void reset()
-    {
-        mean_.init(0.0);
-        variance_.init(0.0);
-        count_ = 0; 
-    }
 };
 
-
+// This is the split functor used by the Hough forest.
+//
+// Rows that have 0 in the first column of the feature matrix correspond
+// to a background patch. These samples are excluded from the variance
+// computation.
 template <class DataSource>
-class RegressionForestCounter3
+class RegressionForestCounter3 : public RegressionForestCounter<DataSource>
 {
-//FIXME this is a a try o decremental calculation version which look at the first colum of the feature matrix and if it 0
-//it excludes the sample from the variance computation "ACTUAL SPLIT FUNCTOR FOR THE HOUGH FOREST"
+    using RegressionForestCounter<DataSource>::labels_;
+    using RegressionForestCounter<DataSource>::mean_;
+    using RegressionForestCounter<DataSource>::variance_;
+    using RegressionForestCounter<DataSource>::tmp_;
+    using RegressionForestCounter<DataSource>::count_;
 public:
-    typedef MultiArrayShape<2>::type Shp;
-    DataSource const &      labels_;
-    ArrayVector <double>    mean_;
-    ArrayVector <double>    variance_;
-    ArrayVector <double>    tmp_;
-    size_t                  count_;
-    int*                    end_;
-
     template<class T>
     RegressionForestCounter3(DataSource const & labels,
             ProblemSpec<T> const & ext_)
-    :
-        labels_(labels),
-        //mean_(ext_.response_size_, 0.0),
-        mean_(labels.shape(1)-1, 0.0),
-        variance_(labels.shape(1)-1, 0.0),
-        tmp_(labels.shape(1)-1, 0.0),
-        count_(0)
+    : RegressionForestCounter<DataSource>(labels, labels.shape(1) - 1)
     {}
 
     template<class Iter>
@@ -931,27 +907,19 @@ public:
         return res;
     }
 
+    // This function is identical to that of the base class,
+    // but it cannot be removed. Since in that case, the increment()
+    // method of the base class will get called and using virtual
+    // functions is not an option.
     template<class Iter, class Resp_t>
     double init (Iter begin, Iter end, Resp_t resp, bool flag=true)
     {
         if (flag)
         {
-            reset();
+            this->reset();
             return this->increment(begin, end);
         }
         return 0;
-    }
-
-    ArrayVector<double> const & response()
-    {
-        return mean_;
-    }
-
-    void reset()
-    {
-        mean_.init(0.0);
-        variance_.init(0.0);
-        count_ = 0;
     }
 };
 
