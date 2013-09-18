@@ -38,30 +38,8 @@
 #include <map>
 #include <set>
 
-#include <unittest.hxx>
-
-//#include <vigra/accessor.hxx>
-//#include <vigra/tinyvector.hxx>
-//#include <vigra/rgbvalue.hxx>
-
-//#include <vigra/coordinate_iterator.hxx>
-//#include <vigra/object_features.hxx>
-
-//#include <vigra/multi_pointoperators.hxx>
-
-//#include <vigra/basicimage.hxx>
-//#include <vigra/stdimage.hxx> // BImage
-//#include <vigra/inspectimage.hxx> // FindAverageAndVariance
-
+#include <vigra/unittest.hxx>
 #include <vigra/multi_array.hxx>
-//#include <vigra/multi_convolution.hxx>
-//#include <vigra/impex.hxx>
-//#include <vigra/imageinfo.hxx>
-//#include <vigra/functorexpression.hxx>
-
-//#include <vigra/algorithm.hxx>
-//#include <vigra/random.hxx>
-//#include <vigra/convolution.hxx>
 #include <vigra/accumulator.hxx>
 
 namespace std {
@@ -258,7 +236,7 @@ struct AccumulatorTest
         shouldEqual(StandardizeTag<RegionRadii>::type::name(), "Coord<RootDivideByCount<Principal<PowerSum<2> > > >");
 
             // HasModifierPriority
-        using namespace vigra::acc::detail;
+        using namespace vigra::acc::acc_detail;
         should((HasModifierPriority<StandardizeTag<Count>::type, AccumulatorPriority>::value));
         should(!(HasModifierPriority<StandardizeTag<Count>::type, AccessDataPriority>::value));
         should((HasModifierPriority<StandardizeTag<Weighted<Count> >::type, WeightingPriority>::value));
@@ -272,7 +250,7 @@ struct AccumulatorTest
     void testLongFormImpl(const char * message)
     {
         using namespace vigra::acc;
-        using namespace vigra::acc::detail;
+        using namespace vigra::acc::acc_detail;
 
         typedef typename StandardizeTag<SOURCE >::type StdSource;
         typedef typename TagLongForm<StdSource, MinPriority>::type LongSource;
@@ -290,7 +268,7 @@ struct AccumulatorTest
 #define TEST_LONG_FORM(SOURCE, TARGET) testLongFormImpl<SOURCE, TARGET >(#SOURCE)
 #define DM DefaultModifier
         {
-            using namespace vigra::acc::detail;
+            using namespace vigra::acc::acc_detail;
 
 
             TEST_LONG_FORM(Minimum, DM<DM<DM<DM<DM<Minimum> > > > >);
@@ -543,8 +521,8 @@ struct AccumulatorTest
             shouldEqualTolerance(get<Principal<Sum> >(a), W(0.0), W(1e-15));
             shouldEqualTolerance(get<Principal<Minimum> >(a), W(-1.3739261246727945, -1.2230658133989472, -0.6526113546697957), W(1e-15));
             shouldEqualTolerance(get<Principal<Maximum> >(a), W(1.4669637815066938,  1.1452966161690161, 0.60253363030808593), W(1e-15));
-            shouldEqualTolerance(get<Principal<Skewness> >(a), W(0.01148108748350361, -0.07581454384153662, -0.09140344434535799), W(1e-14));
-            shouldEqualTolerance(get<Principal<Kurtosis> >(a), W(-1.9829394126459396, -1.6241963546875782, -1.6255854346698215), W(1e-14));
+            shouldEqualTolerance(get<Principal<Skewness> >(a), W(0.01148108748350361, -0.07581454384153662, -0.09140344434535799), W(1e-13));
+            shouldEqualTolerance(get<Principal<Kurtosis> >(a), W(-1.9829394126459396, -1.6241963546875782, -1.6255854346698215), W(1e-13));
             shouldEqualTolerance(get<Principal<SumOfAbsDifferences> >(a), W(5.3819863149157, 3.5369487298822575, 1.8777415203686885), W(1e-14));
         }
 
@@ -694,8 +672,9 @@ struct AccumulatorTest
             shouldEqualTolerance(get<Variance>(a), principalVariance, V(1e-15));
             shouldEqualTolerance(get<Principal<Variance> >(a), principalVariance, V(1e-15));
 
-            Var ref = linalg::identityMatrix<double>(2);
-            shouldEqualTolerance(get<Principal<CoordinateSystem> >(a), ref, eps);
+            Var res = abs(get<Principal<CoordinateSystem> >(a)),
+                ref = linalg::identityMatrix<double>(2);
+            shouldEqualTolerance(res, ref, eps);
             ref(0,0) = principalVariance[0];
             ref(1,1) = principalVariance[1];
             shouldEqualTolerance(get<Covariance>(a), ref, eps);
@@ -860,6 +839,27 @@ struct AccumulatorTest
             shouldEqual(1.0, get<ArgMaxWeight>(a));
             shouldEqual(V(3,1,2), get<Coord<ArgMinWeight> >(a));
             shouldEqual(V(2,3,1), get<Coord<ArgMaxWeight> >(a));
+
+            // test coordinate offset
+            A b;
+            b.setCoordinateOffset(W(0.5, 1.5, -0.5));
+
+            b(*(i+V(1,2,3)));
+            b(*(i+V(2,3,1)));
+            b(*(i+V(3,1,2)));
+
+            shouldEqual(get<Count>(b), 3.0);
+            shouldEqual(get<Coord<Minimum> >(b), W(1.5, 2.5, 0.5));
+            shouldEqual(get<Coord<Maximum> >(b), W(3.5, 4.5, 2.5));
+            shouldEqual(get<Coord<Mean> >(b), W(2.5, 3.5, 1.5));
+            shouldEqualTolerance(get<Weighted<Mean> >(b), 1.2857142857142858, 1e-15);
+            shouldEqualTolerance(get<Mean>(b), 1.8333333333333333, 1e-15);
+            coordWeightedMean = W(2.3571428571428572, 3.9285714285714284,  1.2142857142857142);
+            shouldEqualTolerance(coordWeightedMean, get<CoordWeighted<Mean> >(b), W(1e-15));
+            shouldEqual(4.0, get<ArgMinWeight>(b));
+            shouldEqual(1.0, get<ArgMaxWeight>(b));
+            shouldEqual(W(3.5,2.5,1.5), get<Coord<ArgMinWeight> >(b));
+            shouldEqual(W(2.5,4.5,0.5), get<Coord<ArgMaxWeight> >(b));
         }
     }
 
@@ -901,7 +901,12 @@ struct AccumulatorTest
         shouldEqual(1.0, get<ArgMaxWeight>(a));
         shouldEqual(V(3,1,2), get<Coord<ArgMinWeight> >(a));
         shouldEqual(V(2,3,1), get<Coord<ArgMaxWeight> >(a));
-        
+
+        AccumulatorChain<CoupledArrays<3, double>, Select<WeightArg<1>, Coord<ArgMinWeight> > > b;
+
+        extractFeatures(weights, b);
+
+        shouldEqual(V(3,1,2), get<Coord<ArgMinWeight> >(b));
     }
   
     void testHistogram()
@@ -1108,7 +1113,7 @@ struct AccumulatorTest
     {
         typedef typename acc::LookupDependency<TAG, A>::Tag StandardizedTag;
         typedef typename acc::LookupDependency<TAG, A>::reference reference;
-        return acc::detail::CastImpl<StandardizedTag, typename A::Tag, reference>::exec(a);
+        return acc::acc_detail::CastImpl<StandardizedTag, typename A::Tag, reference>::exec(a);
     }
 
     void testLabelDispatch()
@@ -1122,9 +1127,9 @@ struct AccumulatorTest
             typedef Select<Count, Coord<Sum>, Global<Count>, Global<Coord<Minimum> >, LabelArg<1>, DataArg<1> > Selected;
             typedef AccumulatorChainArray<Handle, Selected> A;
 
-            should((IsSameType<acc::detail::ConfigureAccumulatorChainArray<Handle, Selected>::GlobalTags, 
+            should((IsSameType<acc::acc_detail::ConfigureAccumulatorChainArray<Handle, Selected>::GlobalTags, 
                                TypeList<Count,TypeList<Coord<Minimum>,TypeList<DataArg<1>, TypeList<LabelArg<1>, void> > > > >::value));
-            should((IsSameType<acc::detail::ConfigureAccumulatorChainArray<Handle, Selected>::RegionTags, 
+            should((IsSameType<acc::acc_detail::ConfigureAccumulatorChainArray<Handle, Selected>::RegionTags, 
                                TypeList<Count,TypeList<Coord<Sum>,TypeList<DataArg<1>, void> > > >::value));
 
             typedef LookupTag<Count, A>::type RegionCount;
@@ -1164,6 +1169,21 @@ struct AccumulatorTest
             shouldEqual(V(2,2), get<Coord<Sum> >(a, 0));
             shouldEqual(V(4,1), get<Coord<Sum> >(a, 1));
             shouldEqual(V(0,0), get<Global<Coord<Minimum> > >(a));
+
+            A aa;
+            aa.setMaxRegionLabel(1);
+            aa.setCoordinateOffset(V(2, -1));
+
+            for(i = start; i < end; ++i)
+                aa(*i);
+            
+            shouldEqual(4, get<Count>(aa, 0));
+            shouldEqual(2, get<Count>(aa, 1));
+            shouldEqual(6, get<Global<Count> >(aa));
+
+            shouldEqual(V(10,-2), get<Coord<Sum> >(aa, 0));
+            shouldEqual(V(8,-1), get<Coord<Sum> >(aa, 1));
+            shouldEqual(V(2,-1), get<Global<Coord<Minimum> > >(aa));
 
             A b;
             b.ignoreLabel(0);
@@ -1242,11 +1262,12 @@ struct AccumulatorTest
             typedef CoupledIteratorType<2, double, int>::type Iterator;
             typedef Iterator::value_type Handle;
 
-            typedef DynamicAccumulatorChainArray<Handle, Select<Count, Coord<Mean>, GlobalRangeHistogram<3>,
-                                                                AutoRangeHistogram<3>, 
-                                                                Global<Count>, Global<Coord<Mean> >, 
-                                                                StandardQuantiles<GlobalRangeHistogram<3> >, 
-                                                                LabelArg<2>, DataArg<1>
+            typedef DynamicAccumulatorChainArray<CoupledArrays<2, double, int>, 
+                                                Select<Count, Coord<Mean>, GlobalRangeHistogram<3>,
+                                                       AutoRangeHistogram<3>, 
+                                                       Global<Count>, Global<Coord<Mean> >, 
+                                                       StandardQuantiles<GlobalRangeHistogram<3> >, 
+                                                       LabelArg<2>, DataArg<1>
                                                  > > A;
 
             A a;
@@ -1336,7 +1357,7 @@ struct AccumulatorTest
             A b;
             b.activateAll();
 
-            extractFeatures(start, end, b);
+            extractFeatures(data, labels, b);
             
             shouldEqual(W(4, 0, 0), get<GlobalRangeHistogram<3> >(b,0));
             shouldEqual(W(0, 0, 2), get<GlobalRangeHistogram<3> >(b,1));

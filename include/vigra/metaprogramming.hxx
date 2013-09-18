@@ -94,10 +94,8 @@ struct VigraFalseType
 
 /** tag for marking a MultiArray strided.
 
-<b>\#include</b>
-\<vigra/multi_array.hxx\>
-
-Namespace: vigra
+    <b>\#include</b> \<vigra/multi_array.hxx\> <br/>
+    Namespace: vigra
 */
 struct StridedArrayTag {};
 
@@ -109,10 +107,8 @@ struct StridedArrayTag {};
 
 /** tag for marking a MultiArray unstrided.
 
-<b>\#include</b>
-\<vigra/multi_array.hxx\>
-
-Namespace: vigra
+    <b>\#include</b> \<vigra/multi_array.hxx\> <br/>
+    Namespace: vigra
 */
 struct UnstridedArrayTag {};
 
@@ -640,6 +636,18 @@ struct MetaLog2<X, z, 1, 0, 1, z, z, u, typename EnableMetaLog2<X>::type>
     // A value of zero for MetaLog2<X, 0> is likely to cause most harm,
     // such as division by zero or zero array sizes, this is actually indended.
     static const unsigned value = 0;
+};
+
+template <int X, unsigned int N>
+struct MetaPow
+{
+    static const long long value = MetaPow<X, N-1>::value * X;
+};
+
+template <int X>
+struct MetaPow<X, 0>
+{
+    static const long long value = 1;
 };
 
 /****************************************************************************/

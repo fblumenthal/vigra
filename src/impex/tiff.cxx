@@ -67,10 +67,32 @@
 
 extern "C"
 {
+
 #include <tiff.h>
 #include <tiffio.h>
 #include <tiffvers.h>
+
+static void vigraWarningHandler(char* module, char* fmt, va_list ap)
+{
+    static const std::string ignore("Unknown field with tag");
+    if(ignore.compare(0, ignore.size(), fmt, ignore.size()) == 0)
+        return;
+    
+    if (module != NULL)
+    {
+        static const std::string ignore("TIFFFetchNormalTag");
+        if(ignore.compare(module) == 0)
+            return;
+            
+        fprintf(stderr, "%s: ", module);
+    }
+    
+    fprintf(stderr, "Warning, ");
+    vfprintf(stderr, fmt, ap);
+    fprintf(stderr, ".\n");
 }
+
+} // extern "C"
 
 namespace vigra {
 
@@ -143,6 +165,9 @@ namespace vigra {
 
     VIGRA_UNIQUE_PTR<Decoder> TIFFCodecFactory::getDecoder() const
     {
+        // use 'NULL' to silence all warnings
+        TIFFSetWarningHandler((TIFFErrorHandler)&vigraWarningHandler);
+
         return VIGRA_UNIQUE_PTR<Decoder>( new TIFFDecoder() );
     }
 
@@ -762,7 +787,7 @@ namespace vigra {
         // ctor, dtor
 
         TIFFEncoderImpl( const std::string & filename, const std::string & mode )
-            : tiffcomp(COMPRESSION_NONE), finalized(false)
+            : tiffcomp(COMPRESSION_LZW), finalized(false)
         {
             tiff = TIFFOpen( filename.c_str(), mode.c_str() );
             if (!tiff)

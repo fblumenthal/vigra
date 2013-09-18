@@ -173,14 +173,14 @@ class Processor<ClassificationTag, LabelType, T1, C1, T2, C2>
     :
         features_( features) // do not touch the features. 
     {
-        vigra_precondition(!detail::contains_nan(features), "RandomForest(): Feature Matrix "
-                                                           "Contains NaNs");
+        vigra_precondition(!detail::contains_nan(features), "RandomForest(): Feature matrix "
+                                                           "contains NaNs");
         vigra_precondition(!detail::contains_nan(response), "RandomForest(): Response "
-                                                           "Contains NaNs");
-        vigra_precondition(!detail::contains_inf(features), "RandomForest(): Feature Matrix "
-                                                           "Contains inf");
+                                                           "contains NaNs");
+        vigra_precondition(!detail::contains_inf(features), "RandomForest(): Feature matrix "
+                                                           "contains inf");
         vigra_precondition(!detail::contains_inf(response), "RandomForest(): Response "
-                                                           "Contains inf");
+                                                           "contains inf");
         // set some of the problem specific parameters 
         ext_param.column_count_  = features.shape(1);
         ext_param.row_count_     = features.shape(0);
@@ -235,9 +235,9 @@ class Processor<ClassificationTag, LabelType, T1, C1, T2, C2>
 
     /** Access processed labels
      */
-    MultiArrayView<2, LabelInt>& response()
+    MultiArrayView<2, LabelInt> response()
     {
-        return intLabels_;
+        return MultiArrayView<2, LabelInt>(intLabels_);
     }
 
     /** Access processed strata

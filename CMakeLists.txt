@@ -64,11 +64,25 @@ VIGRA_FIND_PACKAGE(JPEG NAMES libjpeg)
 VIGRA_FIND_PACKAGE(PNG)
 VIGRA_FIND_PACKAGE(FFTW3 NAMES libfftw3-3 libfftw-3.3)
 VIGRA_FIND_PACKAGE(FFTW3F NAMES libfftw3f-3 libfftwf-3.3)
+
 IF(WITH_OPENEXR)
     VIGRA_FIND_PACKAGE(OpenEXR)
 ENDIF()
+
 IF(WITH_HDF5)
     VIGRA_FIND_PACKAGE(HDF5)
+ENDIF()
+
+IF(WITH_BOOST_GRAPH)
+    IF(WITH_VIGRANUMPY)
+        VIGRA_FIND_PACKAGE( Boost 1.40.0 COMPONENTS python )
+    else()
+        VIGRA_FIND_PACKAGE( Boost 1.40.0 )
+    endif()
+ENDIF()
+
+IF(WITH_LEMON)
+    VIGRA_FIND_PACKAGE(LEMON)
 ENDIF()
 
 SET(DOXYGEN_SKIP_DOT TRUE)
@@ -115,6 +129,23 @@ ENABLE_TESTING()
 ##################################################
 
 ADD_CUSTOM_TARGET(doc)
+
+# Automatically push the latest documentation to github's gh-pages.
+# This only works when ${DOCDIR} refers to a VIGRA repository that is 
+# checked out in branch 'gh-pages', and the present repository is 
+# in branch 'master' (these conditions are checked in the script).
+if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+
+    configure_file(${PROJECT_SOURCE_DIR}/config/update-gh-pages.sh.in 
+                   ${PROJECT_BINARY_DIR}/update-gh-pages.sh @ONLY)
+    EXECUTE_PROCESS(COMMAND chmod u+x ${PROJECT_BINARY_DIR}/update-gh-pages.sh OUTPUT_QUIET ERROR_QUIET)
+       
+    ADD_CUSTOM_TARGET(gh-pages 
+          ${PROJECT_BINARY_DIR}/update-gh-pages.sh
+          DEPENDS doc
+          WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+          COMMENT "Pushing documentation to github pages.")
+endif()
 
 ##################################################
 #
@@ -284,6 +315,22 @@ ELSEIF(NOT WITH_HDF5)
     MESSAGE( STATUS "  HDF5 disabled by user (WITH_HDF5=0)" )
 ELSE()
     MESSAGE( STATUS "  HDF5 libraries not found (HDF5 support disabled)" )
+ENDIF()
+
+IF(Boost_FOUND)
+    MESSAGE( STATUS "  Using Boost Graph Library: ${Boost_INCLUDE_DIR}/boost/graph" )
+ELSEIF(NOT WITH_BOOST_GRAPH)
+    MESSAGE( STATUS "  Boost Graph Library disabled by user (WITH_BOOST_GRAPH=0)" )
+ELSE()
+    MESSAGE( STATUS "  Boost Graph Library not found (support disabled)" )
+ENDIF()
+
+IF(LEMON_FOUND)
+    MESSAGE( STATUS "  Using LEMON graph library: ${LEMON_LIBRARY}" )
+ELSEIF(NOT WITH_LEMON)
+    MESSAGE( STATUS "  LEMON graph library disabled by user (WITH_LEMON=0)" )
+ELSE()
+    MESSAGE( STATUS "  LEMON graph library not found (support disabled)" )
 ENDIF()
 
 IF(WITH_VIGRANUMPY)
