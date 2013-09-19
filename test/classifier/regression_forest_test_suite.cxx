@@ -90,7 +90,7 @@ struct RegressionForestTest
         RandomForest<double,RegressionTag> rf(options);
 
 
-        vigra::TestRegressionSplit rsplit;
+        vigra::RegressionSplitL2 rsplit;
         vigra::RandomMT19937 rgn(42);
         rf.learn(features, labels,create_visitor(defaultvisit),rsplit,stop,rgn);
 
@@ -164,7 +164,7 @@ struct RegressionForestTest
         RandomForest<double,RegressionTag> rf(options);
 
 
-        vigra::TestRegressionSplit rsplit;
+        vigra::RegressionSplitL2 rsplit;
         vigra::RandomMT19937 rgn(42);
         rf.learn(features, labels,create_visitor(defaultvisit),rsplit,stop,rgn);
 

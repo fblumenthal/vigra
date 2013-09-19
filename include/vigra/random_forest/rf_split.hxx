@@ -923,66 +923,23 @@ public:
     }
 };
 
-//THis is to try if the decremental calculation and the split functor work well, and now should
+// This is the split functor used by the regression forest computation
 template <class DataSource>
-class RegressionForestCounterTest
+class RegressionForestCounterL2 : public RegressionForestCounter<DataSource>
 {
-//FIXME this is a a try o decremental calculation version which look at the first colum of the feature matrix and if it 0
-//it excludes the sample from the variance computation
+    using RegressionForestCounter<DataSource>::labels_;
+    using RegressionForestCounter<DataSource>::mean_;
+    using RegressionForestCounter<DataSource>::variance_;
+    using RegressionForestCounter<DataSource>::tmp_;
+    using RegressionForestCounter<DataSource>::count_;
+
 public:
-    typedef MultiArrayShape<2>::type Shp;
-    DataSource const &      labels_;
-    ArrayVector <double>    mean_;
-    ArrayVector <double>    variance_;
-    ArrayVector <double>    tmp_;
-    size_t                  count_;
-    int*                    end_;
 
     template<class T>
-    RegressionForestCounterTest(DataSource const & labels,
+    RegressionForestCounterL2(DataSource const & labels,
             ProblemSpec<T> const & ext_)
-    :
-        labels_(labels),
-        //mean_(ext_.response_size_, 0.0),
-        mean_(labels.shape(1), 0.0),
-        variance_(labels.shape(1), 0.0),
-        tmp_(labels.shape(1), 0.0),
-        count_(0)
+    : RegressionForestCounter<DataSource>(labels, labels.shape(1))
     {}
-
-    template<class Iter>
-    double increment (Iter begin, Iter end)
-    {
-        for(Iter iter = begin; iter != end; ++iter)
-        {
-            ++count_;
-
-            double f  = 1.0 / count_,
-                   f1 = 1.0 - f;
-
-            for(int ii = 0; ii < labels_.shape(1); ++ii)
-            {
-                //std::cerr<< labels_(*iter, ii) << " ahdhdh " ;
-
-                tmp_[ii] = labels_(*iter, ii) - mean_[ii];
-
-                mean_[ii] += f*tmp_[ii];
-
-                variance_[ii] +=f1*sq(tmp_[ii]);
-            }
-
-        }
-
-
-        double res = std::accumulate(variance_.begin(),
-                variance_.end(),
-                0.0,
-                std::plus<double>());
-
-
-        //std::cerr << res << "  ) = ";
-        return res;
-    }
 
     template<class Iter>
     double decrement (Iter begin, Iter end)
@@ -1017,178 +974,41 @@ public:
         return res;
     }
 
-
+    // This function is identical to that of the base class,
+    // but it cannot be removed. Since in that case, the increment()
+    // method of the base class will get called and using virtual
+    // functions is not an option.
     template<class Iter, class Resp_t>
     double init (Iter begin, Iter end, Resp_t resp, bool flag= true)
     {
         if (flag)
         {
-            reset();
+            this->reset();
             return this->increment(begin, end);
         }
         return 0;
     }
-
-    ArrayVector<double> const & response()
-    {
-        return mean_;
-    }
-
-    void reset()
-    {
-        mean_.init(0.0);
-        variance_.init(0.0);
-        count_ = 0;
-    }
 };
 
 
-//THis is to try  a different kind of L2 normalization
 template <class DataSource>
-class RegressionForestCounterL2
-
+class RegressionForestCounterL1 : public RegressionForestCounter<DataSource>
 {
-//FIXME this is a a try o decremental calculation version which look at the first colum of the feature matrix and if it 0
-//it excludes the sample from the variance computation
-public:
-    typedef MultiArrayShape<2>::type Shp;
-    DataSource const &      labels_;
-    ArrayVector <double>    mean_;
-    ArrayVector <double>    variance_;
-    ArrayVector <double>    tmp_;
-    size_t                  count_;
-    int*                    end_;
-
-    template<class T>
-    RegressionForestCounterL2(DataSource const & labels,
-            ProblemSpec<T> const & ext_)
-    :
-        labels_(labels),
-        //mean_(ext_.response_size_, 0.0),
-        mean_(labels.shape(1), 0.0),
-        variance_(labels.shape(1), 0.0),
-        tmp_(labels.shape(1), 0.0),
-        count_(0)
-    {}
-
-    template<class Iter>
-    double increment (Iter begin, Iter end)
-    {
-        for(Iter iter = begin; iter != end; ++iter)
-        {
-            ++count_;
-
-            double f  = 1.0 / count_,
-                   f1 = 1.0 - f;
-
-            for(int ii = 0; ii < labels_.shape(1); ++ii)
-            {
-                //std::cerr<< labels_(*iter, ii) << " ahdhdh " ;
-
-                tmp_[ii] = labels_(*iter, ii) - mean_[ii];
-
-                mean_[ii] += f*tmp_[ii];
-
-                double tmp2_=labels_(*iter, ii) - mean_[ii];
-                variance_[ii] +=tmp_[ii]*tmp2_*f1;
-
-            }
-
-        }
-
-        double res = std::accumulate(variance_.begin(),
-                variance_.end(),
-                0.0,
-                std::plus<double>());
-
-        //std::cerr << res << "  ) = ";
-        return res;
-    }
-
-    template<class Iter>
-    double decrement (Iter begin, Iter end)
-    {
-
-        for(Iter iter = begin; iter != end; ++iter)
-        {
-            --count_;
-
-            double f  = 1.0 / count_,
-                   f1 = 1.0 - 1.0/(count_+1);
-
-            for(int ii = 0; ii < mean_.size(); ++ii)
-            {
-                tmp_[ii] =mean_[ii] -labels_(*iter, ii) ;
-
-                mean_[ii] += f*tmp_[ii];
-
-                //FIXME do we need that?
-                tmp_[ii] = labels_(*iter, ii) - mean_[ii];
-                double tmp2_=labels_(*iter, ii) - mean_[ii];
-                variance_[ii] -=((tmp_[ii])*tmp2_)*f1;
-            }
-        }
-
-        double res = std::accumulate(variance_.begin(),
-                variance_.end(),
-                0.0,
-                std::plus<double>());
-        //std::cerr << res << "  ) = ";
-        return res;
-    }
-
-    template<class Iter, class Resp_t>
-    double init (Iter begin, Iter end, Resp_t resp, bool flag= true)
-    {
-        if (flag)
-        {reset();
-            return this->increment(begin, end);
-        }
-        return 0;
-    }
-
-    ArrayVector<double> const & response()
-    {
-        return mean_;
-    }
-
-    void reset()
-    {
-        mean_.init(0.0);
-        variance_.init(0.0);
-        count_ = 0;
-
-    }
-};
-
-
-
-//THis is to try  a different kind of L2 normalization
-template <class DataSource>
-class RegressionForestCounterL1
-{
-//FIXME this is a a try o decremental calculation version which look at the first colum of the feature matrix and if it 0
-//it excludes the sample from the variance computation
-public:
-    typedef MultiArrayShape<2>::type Shp;
-    DataSource const &      labels_;
-    ArrayVector <double>    mean_;
-    ArrayVector <double>    variance_;
-    ArrayVector <double>    tmp_;
-    size_t                  count_;
+    using RegressionForestCounter<DataSource>::labels_;
+    using RegressionForestCounter<DataSource>::mean_;
+    using RegressionForestCounter<DataSource>::variance_;
+    using RegressionForestCounter<DataSource>::tmp_;
+    using RegressionForestCounter<DataSource>::count_;
     int*                    end_;
     int*                    true_begin_;
     int*                    true_end_;
+
+public:
+
     template<class T>
     RegressionForestCounterL1(DataSource const & labels,
             ProblemSpec<T> const & ext_)
-    :
-        labels_(labels),
-        //mean_(ext_.response_size_, 0.0),
-        mean_(labels.shape(1), 0.0),
-        variance_(labels.shape(1), 0.0),
-        tmp_(labels.shape(1), 0.0),
-        count_(0)
+    : RegressionForestCounter<DataSource>(labels, labels.shape(1))
     {}
 
     template<class Iter>
@@ -1277,23 +1097,10 @@ public:
     template<class Iter, class Resp_t>
     double init (Iter begin, Iter end, Resp_t resp, bool flag = true)
     {
-        reset();
+        this->reset();
         true_begin_=begin;
         true_end_=end;
         return this->increment(begin, end);
-    }
-
-
-    ArrayVector<double> const & response()
-    {
-        return mean_;
-    }
-
-    void reset()
-    {
-        mean_.init(0.0);
-        variance_.init(0.0);
-        count_ = 0;
     }
 };
 
@@ -1323,16 +1130,6 @@ struct LossTraits<LSQLoss, Datatype>
 };
 
 //BEGIN TEST
-struct TestLSQLoss
-{};
-
-template<class Datatype>
-struct LossTraits<TestLSQLoss, Datatype>
-{
-    typedef RegressionForestCounterTest<Datatype> type;
-};
-
-
 struct SpecialLSQLoss
 {};
 
@@ -1669,7 +1466,6 @@ typedef  ThresholdSplit<BestGiniOfColumn<GiniCriterion> >                      G
 typedef  ThresholdSplit<BestGiniOfColumn<EntropyCriterion> >                 EntropySplit;
 typedef  ThresholdSplit<BestGiniOfColumn<LSQLoss>, RegressionTag>              RegressionSplit;
 
-typedef  ThresholdSplit<BestGiniOfColumn<TestLSQLoss>, RegressionTag>              TestRegressionSplit;
 typedef  ThresholdSplit<BestGiniOfColumn<L2LSQLoss>, RegressionTag>              RegressionSplitL2;
 typedef  ThresholdSplit<BestGiniOfColumn<L1LSQLoss>, RegressionTag>              RegressionSplitL1;
 
