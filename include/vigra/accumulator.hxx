@@ -911,7 +911,12 @@ struct AccumulatorEndImpl
     template <class U>
     void mergeImpl(U const &) 
     {}
-    
+
+    //CHANGED
+    template <class U>
+    void mergeCopy(U  const &, U &)
+    {}
+        
     template <class U>
     void resize(U const &) 
     {}
@@ -1018,6 +1023,13 @@ struct DecoratorImpl<A, CurrentPass, false, CurrentPass>
         a += o;
     }
 
+    //CHANGED
+    static void mergeCopy(A & a, A const & o, A & res)
+    {
+	//a.operator+=(o);
+	a.mergeCopy_(o, res);
+    }
+
     template <class T>
     static void resize(A & a, T const & t)
     {
@@ -1073,6 +1085,13 @@ struct DecoratorImpl<A, CurrentPass, true, CurrentPass>
     {
         if(isActive(a))
             a += o;
+    }
+
+    //CHANGED
+    static void mergeCopy(A & a, A const & o, A & res)
+    {
+	if(isActive(a))
+	    a.mergeCopy_(o, res);
     }
 
     template <class T>
@@ -1470,6 +1489,16 @@ struct LabelDispatch
         return ActivateImpl<TAG>::isActive(next_, active_region_accumulators_);
     }
     
+    //CHANGED
+    void mergeCopy(unsigned i, unsigned j, LabelDispatch & ld_result)
+    {
+	ld_result.region_histogram_options_ = this->region_histogram_options_;
+	ld_result.ignore_label_ = this->ignore_label_;
+
+	regions_[i].mergeCopy(regions_[j], ld_result.regions_[i]);
+	//ld_result.regions_[i].reset(); //maybe not necessary
+    }
+
     void mergeImpl(LabelDispatch const & o)
     {
         for(unsigned int k=0; k<regions_.size(); ++k)
@@ -1640,7 +1669,11 @@ struct AccumulatorFactory
         
         void operator+=(AccumulatorBase const &)
         {}
-        
+
+	//CHANGED
+	void mergeCopy_(AccumulatorBase const &, AccumulatorBase &)
+	{}
+
         template <class U>
         void update(U const &)
         {}
@@ -1706,6 +1739,16 @@ struct AccumulatorFactory
             this->next_.template pass<N>(t, weight);
             DecoratorImpl<Accumulator, N, allowRuntimeActivation>::exec(*this, t, weight);
         }
+
+	void mergeCopy(Accumulator const & acc_j, Accumulator & res_i)
+	{
+	    // DecoratorImpl<Accumulator, Accumulator::workInPass, allowRuntimeActivation
+	    // 		  >::mergeCopy_(*this, acc_j, res_i);
+	    DecoratorImpl<Accumulator, Accumulator::workInPass, allowRuntimeActivation>::mergeCopy
+		(*this, acc_j, res_i);
+	    //this->mergeCopy_(acc_j, res_i);
+	    this->next_.mergeCopy(acc_j.next_, res_i.next_);
+	}
         
         void mergeImpl(Accumulator const & o)
         {
@@ -2302,6 +2345,14 @@ class AccumulatorChainArray
     void operator+=(AccumulatorChainArray const & o)
     {
         merge(o);
+    }
+
+    // CHANGED
+    void mergeCopy(unsigned i, unsigned j, AccumulatorChainArray & acc_result)
+    {
+	vigra_precondition(i <= maxRegionLabel() && j <= maxRegionLabel(),
+			   "AccumulatorChainArray::mergeCopy_(): region labels out of range.");
+        this->next_.mergeCopy(i, j, acc_result.next_);
     }
     
     /** Merge region i with region j. 
@@ -3509,6 +3560,13 @@ class Central
                 "Central<...>::operator+=(): not supported.");
         }
     
+	//CHANGED
+	void mergeCopy_(Impl const & o, Impl & res)
+	{
+	    vigra_precondition(false,
+			       "Central<...>::mergeCopy_(): not supported.");
+	}
+
         template <class T>
         void update(T const & t)
         {
@@ -3661,6 +3719,12 @@ class Principal
                 "Principal<...>::operator+=(): not supported.");
         }
     
+	void mergeCopy_(Impl const & o, Impl & res)
+	{
+	    vigra_precondition(false,
+			       "Principal<...>::mergeCopy_(): not supported.");
+	}
+
         template <class T>
         void update(T const & t)
         {
@@ -3777,6 +3841,13 @@ struct SumBaseImpl
     {
         value_ += o.value_;
     }
+
+    //CHANGED
+    void mergeCopy_(SumBaseImpl const & o, SumBaseImpl & res)
+    {
+	res.value_ = value_ + o.value_;
+    }
+
 
     result_type operator()() const
     {
@@ -3976,6 +4047,13 @@ struct CachedResultBase
         this->setDirty();
     }
 
+    //CHANGED
+    void mergeCopy_(CachedResultBase const & o, CachedResultBase & res)
+    {
+	res.value_ = value_;
+        res.setDirty();
+    }
+
     void update(U const &)
     {
         this->setDirty();
@@ -4085,7 +4163,36 @@ class RootDivideByCount
             using namespace multi_math;
             return sqrt(getDependency<TargetTag>(*this));
         }
+
+#if 0
+	//CHANGED
+	void operator+=(Impl const & o)
+	{
+	    std::cout << "operator+= error!" << std::endl;
+	}
+#endif
+#if 0
+	//CHANGED
+	void mergeCopy_(Impl const & o, Impl & res)
+	{
+	    //getAccumulator<TargetTag>(*this).mergeCopy_(o, res);
+#if 0
+	    template <class TAG, class A>
+		typename LookupTag<TAG, A>::reference
+		getAccumulator(A & a);
+	    
+	    template <class TAG, class A>
+		typename LookupDependency<TAG, A>::result_type
+		getDependency(A const & a);
+	    getDependency<TargetTag>(*this)
+#endif	    
+		//this->mergeCopy_(o, res);
+		std::cout << "error cannot merge rootdividebycount" << std::endl;
+	}
+#endif
     };
+
+    
 };
 
 // UnbiasedStdDev
@@ -4154,6 +4261,21 @@ class Central<PowerSum<2> >
             }
         }
     
+	void mergeCopy_(Impl const & o, Impl & res)
+	{
+	    using namespace vigra::multi_math;
+            double n1 = getDependency<Count>(*this), n2 = getDependency<Count>(o);
+	    res.value_ = this->value_;
+            if(n1 == 0.0)
+            {
+		res.value_ = o.value_;
+            }
+            else if(n2 != 0.0)
+            {
+		res.value_ = this->value_ + o.value_ + n1 * n2 / (n1 + n2) * sq(getDependency<Mean>(*this) - getDependency<Mean>(o));
+            }
+	}
+
         void update(U const & t)
         {
             double n = getDependency<Count>(*this);
@@ -4218,7 +4340,29 @@ class Central<PowerSum<3> >
                                3.0 / n * delta * (n1 * getDependency<Sum2Tag>(o) - n2 * getDependency<Sum2Tag>(*this));
             }
         }
-    
+
+	//CHANGED
+	void mergeCopy_(Impl const & o, Impl & res)
+	{
+            typedef Central<PowerSum<2> > Sum2Tag;
+            res.value_ = this->value_;
+            using namespace vigra::multi_math;
+            double n1 = getDependency<Count>(*this), n2 = getDependency<Count>(o);
+            if(n1 == 0.0)
+            {
+		res.value_ = o.value_;
+            }
+            else if(n2 != 0.0)
+            {
+                double n = n1 + n2;
+                double weight = n1 * n2 * (n1 - n2) / sq(n);
+                value_type delta = getDependency<Mean>(o) - getDependency<Mean>(*this);
+		res.value_ = this->value_ + o.value_ + weight * pow(delta, 3) +
+		    3.0 / n * delta * (n1 * getDependency<Sum2Tag>(o) - n2 * getDependency<Sum2Tag>(*this));
+            }
+        }
+	
+	
         void update(U const & t)
         {
             using namespace vigra::multi_math;            
@@ -4279,6 +4423,35 @@ class Central<PowerSum<4> >
                               4.0 / n * delta * (n1 * getDependency<Sum3Tag>(o) - n2 * getDependency<Sum3Tag>(*this));
             }
         }
+
+	//CHANGED
+	void mergeCopy_(Impl const & o, Impl & res)
+        {
+            typedef Central<PowerSum<2> > Sum2Tag;
+            typedef Central<PowerSum<3> > Sum3Tag;
+
+	    res.value_ = this->value_;
+            using namespace vigra::multi_math;
+            double n1 = getDependency<Count>(*this), n2 = getDependency<Count>(o);
+            if(n1 == 0.0)
+            {
+		res.value_ = o.value_;
+                //this->value_ = o.value_;
+            }
+            else if(n2 != 0.0)
+            {
+                double n = n1 + n2;
+                double n1_2 = sq(n1);
+                double n2_2 = sq(n2);
+                double n_2 = sq(n);
+                double weight = n1 * n2 * (n1_2 - n1*n2 + n2_2) / n_2 / n;
+                value_type delta = getDependency<Mean>(o) - getDependency<Mean>(*this);
+                res.value_ = this->value_ + o.value_ + weight * pow(delta, 4) +
+		    6.0 / n_2 * sq(delta) * (n1_2 * getDependency<Sum2Tag>(o) + n2_2 * getDependency<Sum2Tag>(*this)) +
+		    4.0 / n * delta * (n1 * getDependency<Sum3Tag>(o) - n2 * getDependency<Sum3Tag>(*this));
+            }
+        }
+	
     
         void update(U const & t)
         {
@@ -4561,7 +4734,31 @@ class FlatScatterMatrix
                 value_ += o.value_;
             }
         }
-    
+	
+	//CHANGED
+	void mergeCopy_(Impl const & o, Impl & res)
+        {
+            double n1 = getDependency<Count>(*this), n2 = getDependency<Count>(o);
+	    res.value_ = value_;
+	    res.diff_ = diff_;
+            if(n1 == 0.0)
+            {
+		res.value_ = o.value_;
+                //value_ = o.value_;
+            }
+            else if(n2 != 0.0)
+            {
+                using namespace vigra::multi_math;
+                diff_ = getDependency<Mean>(*this) - getDependency<Mean>(o);
+		//error here!
+		res.value_ = value_;
+                acc_detail::updateFlatScatterMatrix(res.value_, diff_, n1 * n2 / (n1 + n2));
+                res.value_ += o.value_;
+            }
+        }
+
+
+
         void update(U const & t)
         {
             compute(t);
@@ -4710,6 +4907,19 @@ class ScatterMatrixEigensystem
             }
             this->setDirty();
         }
+	
+	//CHANGED error
+	void mergeCopy_(Impl const & o, Impl & res)
+        {
+	    res.value_ = value_;
+            if(!acc_detail::hasDataImpl(value_.second))
+            {
+                acc_detail::copyShapeImpl(o.value_.first, res.value_.first);
+                acc_detail::copyShapeImpl(o.value_.second, res.value_.second);
+            }
+            res.setDirty();
+        }
+
 
         void update(U const &)
         {
@@ -4799,6 +5009,13 @@ class DivideByCount<ScatterMatrixEigensystem>
         void operator+=(Impl const &)
         {
             this->setDirty();
+        }
+
+	//CHANGED
+	void mergeCopy_(Impl const & o, Impl & res)
+        {
+	    res.value_ = value_;
+            res.setDirty();
         }
 
         void update(U const &)
@@ -4944,6 +5161,13 @@ class Principal<PowerSum<2> >
         {
             return getDependency<ScatterMatrixEigensystem>(*this).first;
         }
+#if 0
+	//CHANGED
+	void mergeCopy_(Impl const & o, Impl & res)
+	{
+	    std::cout << "error principal<powersum<2> > needs mergecopy" << std::endl;
+	}
+#endif
     };
 };
 
@@ -5025,6 +5249,12 @@ class Minimum
             updateImpl(o.value_); // necessary because std::min causes ambiguous overload
         }
     
+	//CHANGED
+	void mergeCopy_(Impl const & o, Impl & res)
+	{
+	    res.updateCopyImpl(this->value_, o.value_);
+	}
+
         void update(U const & t)
         {
             updateImpl(t);
@@ -5052,6 +5282,22 @@ class Minimum
         void updateImpl(MultiArray<1, T, Alloc> const & o)
         {
             value_ = multi_math::min(value_, o);
+        }
+
+	//CHANGED
+	template <class T>
+        void updateCopyImpl(T const & a_value_, T const & o_value_)
+        {
+            using namespace multi_math;
+            value_ = min(a_value_, o_value_);
+        }
+        
+	//CHANGED
+        template <class T, class Alloc>
+        void updateCopyImpl(MultiArray<1, T, Alloc> const & a_value_, 
+			    MultiArray<1, T, Alloc> const & o_value_)
+        {
+            value_ = multi_math::min(a_value_, o_value_);
         }
     };
 };
@@ -5103,6 +5349,12 @@ class Maximum
             updateImpl(o.value_); // necessary because std::max causes ambiguous overload
         }
     
+	//CHANGED
+	void mergeCopy_(Impl const & o, Impl & res)
+	{
+	    res.updateCopyImpl(this->value_, o.value_);
+	}
+
         void update(U const & t)
         {
             updateImpl(t);
@@ -5131,6 +5383,23 @@ class Maximum
         {
             value_ = multi_math::max(value_, o);
         }
+
+	//CHANGED
+	template <class T>
+        void updateCopyImpl(T const & a_value_, T const & o_value_)
+        {
+            using namespace multi_math;
+            value_ = max(a_value_, o_value_);
+        }
+        
+	//CHANGED
+        template <class T, class Alloc>
+        void updateCopyImpl(MultiArray<1, T, Alloc> const & a_value_, 
+			    MultiArray<1, T, Alloc> const & o_value_)
+        {
+            value_ = multi_math::max(a_value_, o_value_);
+        }
+
     };
 };
 
@@ -5187,6 +5456,22 @@ class ArgMinWeight
                 value_ = o.value_;
             }
         }
+
+	//CHANGED
+	void mergeCopy_(Impl const & o, Impl & res)
+	{
+            using namespace multi_math;
+            if(o.min_weight_ < min_weight_)
+            {
+                res.min_weight_ = o.min_weight_;
+                res.value_ = o.value_;
+            }
+	    else
+	    {
+		res.min_weight = min_weight_;
+		res.value_ = value_;
+	    }
+	}
     
         void update(U const & t)
         {
@@ -5263,6 +5548,22 @@ class ArgMaxWeight
             }
         }
     
+	//CHANGED
+	void mergeCopy_(Impl const & o, Impl & res)
+	{
+            using namespace multi_math;
+            if(o.max_weight_ > max_weight_)
+            {
+                res.max_weight_ = o.max_weight_;
+                res.value_ = o.value_;
+            }
+	    else
+	    {
+		res.max_weight = max_weight_;
+		res.value_ = value_;
+	    }
+	}
+
         void update(U const & t)
         {
             vigra_precondition(false, "ArgMaxWeight::update() needs weights.");
@@ -5317,6 +5618,15 @@ class HistogramBase
         left_outliers += o.left_outliers;
         right_outliers += o.right_outliers;
     }
+
+    //CHANGED
+    void mergeCopy_(HistogramBase const & o, HistogramBase & res)
+    {
+        res.value_ = value_ + o.value_;
+        res.left_outliers = left_outliers + o.left_outliers;
+        res.right_outliers = right_outliers + o.right_outliers;
+    }
+
         
     result_type operator()() const
     {
@@ -5365,6 +5675,24 @@ class HistogramBase<BASE, 0>
         left_outliers += o.left_outliers;
         right_outliers += o.right_outliers;
     }
+
+    //CHANGED
+    void mergeCopy_(HistogramBase const & o, HistogramBase & res)
+    {
+        if(value_.size() == 0)
+        {
+            res.value_ = o.value_;
+        }
+        else if(o.value_.size() > 0)
+        {
+            vigra_precondition(value_.size() == o.value_.size(),
+			       "HistogramBase::operator+=(): bin counts must be equal.");
+            res.value_ = value_ + o.value_;
+        }
+        res.left_outliers = left_outliers + o.left_outliers;
+        res.right_outliers = right_outliers + o.right_outliers;
+    }
+
         
     void setBinCount(int binCount)
     {
@@ -5413,6 +5741,28 @@ class RangeHistogramBase
             inverse_scale_ = o.inverse_scale_;
         }
     }
+
+    //CHANGED
+    void mergeCopy_(RangeHistogramBase const & o, RangeHistogramBase & res)
+    {
+        vigra_precondition(scale_ == 0.0 || o.scale_ == 0.0 || (scale_ == o.scale_ && offset_ == o.offset_),
+	   "RangeHistogramBase::operator+=(): cannot merge histograms with different data mapping.");
+        
+        HistogramBase<BASE, BinCount>::mergeCopy_(o, res);
+        if(scale_ == 0.0)
+        {
+            res.scale_ = o.scale_;
+            res.offset_ = o.offset_;
+            res.inverse_scale_ = o.inverse_scale_;
+        }
+	else
+	{
+            res.scale_ = scale_;
+            res.offset_ = offset_;
+            res.inverse_scale_ = inverse_scale_;	    
+	}
+    }
+    
 
     void update(U const & t)
     {
