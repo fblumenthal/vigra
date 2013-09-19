@@ -49,7 +49,7 @@
 namespace vigra
 {
 
-template<class LabelType, class T =float, class C=StridedArrayTag>
+template<class LabelType, class T =float>
 class Hough_Forest: public RandomForest<LabelType, HoughTag>
 {
 public:
@@ -104,126 +104,66 @@ public:
         nte_samples = 0;
     }
 
+    template <class C, class Split_t>
+    void learn(const MultiArrayView<2, LabelType, C>& train_data,
+            const MultiArrayView<2, LabelType, C>& train_labels,
+            Split_t split)
+    {
+        ntr_samples = train_data.shape(0);
+        dim_labels = train_labels.shape(1);
+        dim_features = train_data.shape(1);
+
+        tr_labels = train_labels;
+
+        rf::visitors::RandomForestProgressVisitor progressvisit;
+
+        if (seed<0)
+        {
+            RandomForest<LabelType, HoughTag>::learn(train_data, train_labels,
+                create_visitor((*this).visitor_learning, progressvisit),
+                split, stop);
+        }
+        else
+        {
+            RandomNumberGenerator rng(seed);
+            RandomForest<LabelType, HoughTag>::learn(train_data, train_labels,
+                    create_visitor((*this).visitor_learning, progressvisit),
+                    split, stop, rng);
+        }
+    }
+
     //FIXME: Random Gini and Random Entropy work in general a bit better BUT the implementation makes them much slower
     // the implementation of the split functor should be completely reworked
-    void learnRandomGini(const MultiArrayView<2,LabelType,C>& train_data,
-            const MultiArrayView<2,LabelType,C>& train_labels)
+    template <class C>
+    void learnRandomGini(const MultiArrayView<2, LabelType, C>& train_data,
+            const MultiArrayView<2, LabelType, C>& train_labels)
     {
-        ntr_samples = train_data.shape(0);
-        dim_labels = train_labels.shape(1);
-        dim_features = train_data.shape(1);
-
-        tr_labels = train_labels;
-
-        rf::visitors::RandomForestProgressVisitor progressvisit;
-
         vigra::rf::split::HoughSplitRandomGini rsplit;
-
-        if (seed<0)
-        {
-        this->learn(train_data, train_labels,
-                create_visitor((*this).visitor_learning, progressvisit),
-                rsplit, stop);
-        }
-        else
-        {
-            RandomNumberGenerator rng(seed);
-            this->learn(train_data, train_labels,
-                    create_visitor((*this).visitor_learning, progressvisit),
-                    rsplit, stop,rng);
-        }
+        learn(train_data, train_labels, rsplit);
     }
 
-
-    void learnRandomEntropy(const MultiArrayView<2,LabelType,C>& train_data,
-            const MultiArrayView<2,LabelType,C>& train_labels)
+    template <class C>
+    void learnRandomEntropy(const MultiArrayView<2, LabelType, C>& train_data,
+            const MultiArrayView<2, LabelType, C>& train_labels)
     {
-        ntr_samples = train_data.shape(0);
-        dim_labels = train_labels.shape(1);
-        dim_features = train_data.shape(1);
-
-        tr_labels = train_labels;
-
-        rf::visitors::RandomForestProgressVisitor progressvisit;
-
         vigra::rf::split::HoughSplitRandomEntropy rsplit;
-
-        if (seed<0)
-        {
-        this->learn(train_data, train_labels,
-                create_visitor((*this).visitor_learning, progressvisit),
-                rsplit, stop);
-        }
-        else
-        {
-            RandomNumberGenerator rng(seed);
-            this->learn(train_data, train_labels,
-                    create_visitor((*this).visitor_learning, progressvisit),
-                    rsplit, stop,rng);
-        }
+        learn(train_data, train_labels, rsplit);
     }
 
-
-    void learnOrthogonalEntropy(const MultiArrayView<2,LabelType,C>& train_data, const MultiArrayView<2,LabelType,C>& train_labels)
+    template <class C>
+    void learnOrthogonalEntropy(const MultiArrayView<2,LabelType,C>& train_data,
+            const MultiArrayView<2, LabelType, C>& train_labels)
     {
-        ntr_samples = train_data.shape(0);
-        dim_labels = train_labels.shape(1);
-        dim_features = train_data.shape(1);
-
-        tr_labels = train_labels;
-
-        rf::visitors::RandomForestProgressVisitor progressvisit;
-
         vigra::rf::split::HoughSplitEntropy rsplit;
-
-
-        if (seed<0)
-        {
-        this->learn(train_data, train_labels,
-                create_visitor((*this).visitor_learning, progressvisit),
-                rsplit, stop);
-        }
-        else
-        {
-            RandomNumberGenerator rng(seed);
-            this->learn(train_data, train_labels,
-                    create_visitor((*this).visitor_learning, progressvisit),
-                    rsplit, stop,rng);
-
-        }
-
+        learn(train_data, train_labels, rsplit);
     }
 
-
-    void learnOrthogonalGini(const MultiArrayView<2,LabelType,C>& train_data, const MultiArrayView<2,LabelType,C>& train_labels)
+    template <class C>
+    void learnOrthogonalGini(const MultiArrayView<2, LabelType, C>& train_data,
+            const MultiArrayView<2, LabelType, C>& train_labels)
     {
-        ntr_samples = train_data.shape(0);
-        dim_labels = train_labels.shape(1);
-        dim_features = train_data.shape(1);
-
-        tr_labels = train_labels;
-
-        rf::visitors::RandomForestProgressVisitor progressvisit;
-
         vigra::rf::split::HoughSplitGini rsplit;
-
-
-        if (seed<0)
-        {
-        this->learn(train_data, train_labels,
-                create_visitor((*this).visitor_learning, progressvisit),
-                rsplit, stop);
-        }
-        else
-        {
-            RandomNumberGenerator rng(seed);
-            this->learn(train_data, train_labels,
-                    create_visitor((*this).visitor_learning, progressvisit),
-                    rsplit, stop,rng);
-            visitor_learning.save("OGlearnvisit_new.h5", "/learn");
-
-        }
-
+        learn(train_data, train_labels, rsplit);
     }
 
     template<class result, class A>
@@ -341,8 +281,8 @@ public:
 
 #ifdef HasHDF5
 
-template<class LabelType, class T, class C>
-bool hf_import_HDF5(Hough_Forest<LabelType, T, C> &Hf, const std::string &fname)
+template<class LabelType, class T>
+bool hf_import_HDF5(Hough_Forest<LabelType, T> &Hf, const std::string &fname)
 {
     std::string pathname = "forest";
 
@@ -364,8 +304,8 @@ bool hf_import_HDF5(Hough_Forest<LabelType, T, C> &Hf, const std::string &fname)
     return 1;
 }
 
-template<class LabelType, class T , class C >
-bool hf_saveToHDF5(const Hough_Forest<LabelType,T,C> &Hf,
+template<class LabelType, class T>
+bool hf_saveToHDF5(const Hough_Forest<LabelType,T> &Hf,
         const std::string &fname)
 {
     if(boost::filesystem::exists(fname))

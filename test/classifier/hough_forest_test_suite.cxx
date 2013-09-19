@@ -139,7 +139,8 @@ struct HoughForestTest
      *
      * give the possibility to serialize current result as new reference
      */
-    void HoughForestTestInfer(Hough_Forest<double,double,UnstridedArrayTag>& HF,std::string basenamereference, bool make_reference= false)
+    void HoughForestTestInfer(Hough_Forest<double, double>& HF,
+            std::string basenamereference, bool make_reference= false)
     {
 
 
@@ -175,7 +176,7 @@ struct HoughForestTest
 //        options.use_stratification(RF_EQUAL);
 //        options.samples_per_tree(0.9);
 //        options.features_per_node(mtry)
-        Hough_Forest<double,double,UnstridedArrayTag> HF(options,10, 20,42);
+        Hough_Forest<double, double> HF(options, 10, 20,42);
 
         HF.learnOrthogonalGini(features_hf_train,response_hf_train);
 
@@ -191,7 +192,7 @@ struct HoughForestTest
 //        options.use_stratification(RF_EQUAL);
 //        options.samples_per_tree(0.9);
 //        options.features_per_node(mtry)
-        Hough_Forest<double,double,UnstridedArrayTag> HF(options,10, 20,42);
+        Hough_Forest<double, double> HF(options, 10, 20,42);
         HF.learnOrthogonalEntropy(features_hf_train,response_hf_train);
         std::string basenamereference="data/hf_cells_reference_OE";
         this->HoughForestTestInfer(HF,basenamereference);
@@ -210,7 +211,7 @@ struct HoughForestTest
 //        options.use_stratification(RF_EQUAL);
         options.samples_per_tree(0.5);
 //        options.features_per_node(mtry)
-        Hough_Forest<double,double,UnstridedArrayTag> HF(options,3, 50,42);
+        Hough_Forest<double, double> HF(options, 3, 50,42);
 
         HF.learnRandomEntropy(features_hf_train,response_hf_train);
         std::string basenamereference="data/hf_cells_reference_RE";
@@ -229,7 +230,7 @@ struct HoughForestTest
 //        options.use_stratification(RF_EQUAL);
         options.samples_per_tree(0.5);
 //        options.features_per_node(mtry)
-        Hough_Forest<double,double,UnstridedArrayTag> HF(options,3, 50,42);
+        Hough_Forest<double, double> HF(options, 3, 50,42);
 
         HF.learnRandomGini(features_hf_train,response_hf_train);
         std::string basenamereference="data/hf_cells_reference_RG";
