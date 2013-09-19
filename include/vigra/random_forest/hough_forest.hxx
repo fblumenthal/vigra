@@ -71,27 +71,23 @@ public:
 
     MultiArray<2,LabelType> tr_labels;
 
-    int seed;
-
-    typedef vigra::RandomMT19937 RandomNumberGenerator;
-
-    Hough_Forest(RandomForestOptions options, int max_depth, int min_size, int seed_=-1) :
+    Hough_Forest(RandomForestOptions options, int max_depth, int min_size) :
         RandomForest<LabelType, HoughTag> (options), options_(options),
-        stop(max_depth, min_size), seed(seed_)
+        stop(max_depth, min_size)
     {
         initParams();
     }
 
 
     Hough_Forest(RandomForestOptions options) :
-        RandomForest<LabelType, HoughTag> (options), options_(options),seed(-1)
+        RandomForest<LabelType, HoughTag> (options), options_(options)
     {
         initParams();
     }
 
     Hough_Forest(int treeCount) :
         RandomForest<LabelType, HoughTag> (
-                vigra::RandomForestOptions().tree_count(treeCount)),seed(-1)
+                vigra::RandomForestOptions().tree_count(treeCount))
     {
         initParams();
     }
@@ -104,10 +100,10 @@ public:
         nte_samples = 0;
     }
 
-    template <class C, class Split_t>
+    template <class C, class Split_t, class Random_t>
     void learn(const MultiArrayView<2, LabelType, C>& train_data,
             const MultiArrayView<2, LabelType, C>& train_labels,
-            Split_t split)
+            Split_t split, Random_t &rng)
     {
         ntr_samples = train_data.shape(0);
         dim_labels = train_labels.shape(1);
@@ -117,53 +113,65 @@ public:
 
         rf::visitors::RandomForestProgressVisitor progressvisit;
 
-        if (seed<0)
-        {
-            RandomForest<LabelType, HoughTag>::learn(train_data, train_labels,
+        RandomForest<LabelType, HoughTag>::learn(train_data, train_labels,
                 create_visitor((*this).visitor_learning, progressvisit),
-                split, stop);
-        }
-        else
-        {
-            RandomNumberGenerator rng(seed);
-            RandomForest<LabelType, HoughTag>::learn(train_data, train_labels,
-                    create_visitor((*this).visitor_learning, progressvisit),
-                    split, stop, rng);
-        }
+                split, stop, rng);
+    }
+
+    template <class C, class Split_t>
+    void learn(const MultiArrayView<2, LabelType, C>& train_data,
+            const MultiArrayView<2, LabelType, C>& train_labels,
+            Split_t split, UInt32 randomSeed)
+    {
+        RandomNumberGenerator<> rng(randomSeed, randomSeed == 0);
+        learn(train_data, train_labels, split, rng);
+    }
+
+
+    template <class C, class Split_t, class Random_t>
+    void learn(const MultiArrayView<2, LabelType, C>& train_data,
+            const MultiArrayView<2, LabelType, C>& train_labels,
+            Split_t split)
+    {
+        learn(train_data, train_labels, split, rf_default());
     }
 
     //FIXME: Random Gini and Random Entropy work in general a bit better BUT the implementation makes them much slower
     // the implementation of the split functor should be completely reworked
     template <class C>
     void learnRandomGini(const MultiArrayView<2, LabelType, C>& train_data,
-            const MultiArrayView<2, LabelType, C>& train_labels)
+            const MultiArrayView<2, LabelType, C>& train_labels,
+            UInt32 randomSeed=0)
     {
         vigra::rf::split::HoughSplitRandomGini rsplit;
-        learn(train_data, train_labels, rsplit);
+        learn(train_data, train_labels, rsplit, randomSeed);
     }
 
     template <class C>
     void learnRandomEntropy(const MultiArrayView<2, LabelType, C>& train_data,
-            const MultiArrayView<2, LabelType, C>& train_labels)
+            const MultiArrayView<2, LabelType, C>& train_labels,
+            UInt32 randomSeed=0)
     {
         vigra::rf::split::HoughSplitRandomEntropy rsplit;
-        learn(train_data, train_labels, rsplit);
+        learn(train_data, train_labels, rsplit, randomSeed);
     }
 
     template <class C>
     void learnOrthogonalEntropy(const MultiArrayView<2,LabelType,C>& train_data,
-            const MultiArrayView<2, LabelType, C>& train_labels)
+            const MultiArrayView<2, LabelType, C>& train_labels,
+            UInt32 randomSeed=0)
     {
         vigra::rf::split::HoughSplitEntropy rsplit;
-        learn(train_data, train_labels, rsplit);
+        learn(train_data, train_labels, rsplit, randomSeed);
     }
 
     template <class C>
     void learnOrthogonalGini(const MultiArrayView<2, LabelType, C>& train_data,
-            const MultiArrayView<2, LabelType, C>& train_labels)
+            const MultiArrayView<2, LabelType, C>& train_labels,
+            UInt32 randomSeed=0)
     {
         vigra::rf::split::HoughSplitGini rsplit;
-        learn(train_data, train_labels, rsplit);
+        learn(train_data, train_labels, rsplit, randomSeed);
     }
 
     template<class result, class A>
