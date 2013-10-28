@@ -63,7 +63,8 @@ enum NodeTags
     i_HyperplaneNode    = 1,
     i_HypersphereNode   = 2,
     e_ConstProbNode     = 0 | LeafNodeTag,
-    e_LogRegProbNode    = 1 | LeafNodeTag
+    e_LogRegProbNode    = 1 | LeafNodeTag,
+    e_HoughTerminalNode = 2 | LeafNodeTag
 };
 
 /** NodeBase class.
@@ -453,6 +454,7 @@ class Node<i_HyperplaneNode>
                     BT::P_Container_type    &   split_param)
                 :   BT(nCol + 5,nCol + 2,topology, split_param)
     {
+        BT::column_data()[0] = nCol;
         BT::typeID() = i_HyperplaneNode;
     }
 
@@ -666,6 +668,46 @@ class Node<e_ConstProbNode>
 
 template<>
 class Node<e_LogRegProbNode>;
+
+template<>
+class Node<e_HoughTerminalNode>
+: public NodeBase
+{
+    public:
+
+    typedef     NodeBase    BT;
+
+    Node(           BT::T_Container_type    &   topology,
+                    BT::P_Container_type    &   param)
+                    :
+                BT(2,topology[1]+1, topology, param)
+
+    {
+        BT::typeID() = e_ConstProbNode;
+    }
+
+    Node(           BT::T_Container_type const &   topology,
+                    BT::P_Container_type const &   param,
+                    int                  n             )
+                :   BT(2, topology[1]+1,topology, param, n)
+    { }
+
+    Node( BT & node_)
+        :   BT(2, node_.classCount_ +1, node_)
+    {}
+    BT::Parameter_type  prob_begin() const
+    {
+        return BT::parameters_begin()+1;
+    }
+    BT::Parameter_type  prob_end() const
+    {
+        return prob_begin() + prob_size();
+    }
+    int prob_size() const
+    {
+        return BT::classCount_;
+    }
+};
 
 } // namespace vigra
 

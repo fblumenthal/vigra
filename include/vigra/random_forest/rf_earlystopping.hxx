@@ -1,6 +1,8 @@
 #ifndef RF_EARLY_STOPPING_P_HXX
 #define RF_EARLY_STOPPING_P_HXX
 #include <cmath>
+#include <ostream>
+#include <vigra/multi_array.hxx>
 #include "rf_common.hxx"
 
 namespace vigra
@@ -414,5 +416,88 @@ public:
         return false;
     }
 };
+
+/**\brief Stop if tree has reached certain depth
+ * Not advisable to use for the standard random forest as tree depth is
+ != region size
+ * Stop if region.depth() > max_depth_;
+ */
+class DepthStopping: public StopBase
+{
+public:
+    int max_depth_;
+
+    DepthStopping(int depth=-1) :
+        max_depth_(depth)
+    {
+    }
+
+    template<class T>
+    void set_external_parameters(ProblemSpec<T> const &,
+            int /* tree_count */= 0, bool /* is_weighted_ */= false)
+    {
+    }
+
+    template<class Region>
+    bool operator()(Region& region)
+    {
+        //std::cout << "region depth is " << region.depth() << ", max depth "
+        //    << double(max_depth_) << std::endl;
+        if (region.depth() > max_depth_ + 1)
+            throw std::runtime_error("violation in the stopping criterion");
+
+        return region.depth() > max_depth_;
+
+    }
+
+    template<class WeightIter, class T, class C>
+    bool after_prediction(WeightIter, int /* k */,
+            MultiArrayView<2, T, C> /* prob */, double /* totalCt */)
+    {
+        return false;
+    }
+};
+
+class DepthAndSizeStopping: public StopBase
+{
+public:
+    int max_depth_;
+    int min_size_;
+
+    DepthAndSizeStopping(int depth =-1, int size =0) :
+        max_depth_(depth), min_size_(size)
+    {
+    }
+
+    template<class T>
+    void set_external_parameters(ProblemSpec<T> const &,
+            int /* tree_count */= 0, bool /* is_weighted_ */= false)
+    {
+    }
+
+    template<class Region>
+    bool operator()(Region& region)
+    {
+        //std::cout << "region depth is " << region.depth() << ", max depth "
+        //        << max_depth_ << std::endl;
+        //std::cout << "The region size is " << region.size() << ", min size "
+        //        << min_size_ << std::endl;
+
+        //FIXME this is not clean
+        if (region.size()>60 && region.depth() < max_depth_*1.5)
+            return 0;
+        return (region.depth() > max_depth_) || (region.size() < min_size_) ;
+
+    }
+
+    template<class WeightIter, class T, class C>
+    bool after_prediction(WeightIter, int /* k */,
+            MultiArrayView<2, T, C> /* prob */, double /* totalCt */)
+    {
+        return true;
+    }
+};
+
+
 } //namespace vigra;
 #endif //RF_EARLY_STOPPING_P_HXX

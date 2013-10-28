@@ -162,6 +162,11 @@ class DT_StackEntry
 
     void classCounts(ArrayVector<Int32> in);
 
+    DT_StackEntry()
+    {
+
+    }
+
     DT_StackEntry( IndexIterator i, IndexIterator e,
                         int classCount,
                         Int32 lp = DecisionTreeNoParent,

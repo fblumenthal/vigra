@@ -288,12 +288,19 @@ class DecisionTree
         return getToLeaf(features, stop);
     }
 
-
     template <class U, class C>
     ArrayVector<double>::iterator
     predict(MultiArrayView<2, U, C> const & features) const
     {
-        TreeInt nodeindex = getToLeaf(features);
+        vigra::rf::visitors::StopVisiting stop;
+        return this->predict(features, stop);
+    }
+
+    template <class U, class C, class Visitor>
+    ArrayVector<double>::iterator
+    predict(MultiArrayView<2, U, C> const & features, Visitor & visitor) const
+    {
+        TreeInt nodeindex = getToLeaf(features, visitor);
         switch(topology_[nodeindex])
         {
             case e_ConstProbNode:

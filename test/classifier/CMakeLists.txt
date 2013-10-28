@@ -9,6 +9,16 @@ else()
 endif()
 
 VIGRA_ADD_TEST(classifier_speed_comparison speed_comparison.cxx)
+if(HDF5_FOUND)
+    INCLUDE_DIRECTORIES(${HDF5_INCLUDE_DIR})
+
+    ADD_DEFINITIONS(${HDF5_CPPFLAGS} -DHasHDF5)
+    VIGRA_ADD_TEST(test_regression_forest regression_forest_test_suite.cxx LIBRARIES vigraimpex ${HDF5_LIBRARIES})
+    VIGRA_ADD_TEST(test_hough_forest hough_forest_test_suite.cxx LIBRARIES
+	    vigraimpex boost_filesystem ${HDF5_LIBRARIES})
+else()
+    MESSAGE(STATUS "** WARNING: regression_forest_test_suite and hough_forest_test_suite will not be executed")
+endif()
 
 add_subdirectory(data)
 

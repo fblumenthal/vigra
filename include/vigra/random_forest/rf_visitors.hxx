@@ -160,6 +160,14 @@ class VisitorBase
     template<class RF, class PR, class SM, class ST>
     void visit_after_tree(RF& rf, PR & pr,  SM & sm, ST & st, int index)
     {}
+
+    /** This works if you want a visitor at prediction time
+    *
+    *   index_sample is the index of the sample currently being processed
+    */
+    template<class RF>
+    void visit_before_tree_prediction(RF& rf, int index, int index_sample)
+     {}
     
     /** do something after all trees have been learned
      *

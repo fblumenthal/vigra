@@ -13,6 +13,7 @@ Release/
 Debug/
 *.py[co]
 *~
+.*.sw[a-z]
 *.mex
 *.mexw32
 *.mexglx
@@ -33,3 +34,4 @@ Makefile
 *.l[doa]
 *.loT
 *.orig
+tags
