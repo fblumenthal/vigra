@@ -362,13 +362,21 @@ Slic<N, T, Label>::postProcessing()
     }
     
     // make labels contiguous after possible merging
+<<<<<<< HEAD
     //unsigned int maxLabel_ = 0; 
     maxLabel = 0; 
+=======
+    unsigned int newMaxLabel = 0; 
+>>>>>>> 87a9a4a1e4caa879ff0b37285f6fd83da6ff9113
     for(unsigned int i=1; i<=maxLabel; ++i)
     {
         if(regions[i] == i)
         {
+<<<<<<< HEAD
 	    regions[i] = (Label)++maxLabel;//_;
+=======
+                regions[i] = (Label)++newMaxLabel;
+>>>>>>> 87a9a4a1e4caa879ff0b37285f6fd83da6ff9113
         }
         else
         {
@@ -382,7 +390,11 @@ Slic<N, T, Label>::postProcessing()
         labelImage_[*node] = regions[labelImage_[*node]];
     }
     
+<<<<<<< HEAD
     return maxLabel;//_;
+=======
+    return newMaxLabel;
+>>>>>>> 87a9a4a1e4caa879ff0b37285f6fd83da6ff9113
 }
 
 } // namespace detail
