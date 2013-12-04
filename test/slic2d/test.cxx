@@ -115,7 +115,19 @@ struct SlicTest
 
         // exportImage(srcImageRange(labels), ImageExportInfo("slic.xv"));
         importImage(ImageImportInfo("slic.xv"), destImage(labels_ref));
-
+#if 1 //changed by me
+	for (int j=1; j<319; j++)
+	{
+	    bool label_missing = true;
+	    for (int i=0; i<labels_ref.size(); i++)
+	    {
+		if (labels_ref(i) == j)
+		    label_missing = false;
+	    }
+	    if (label_missing)
+		std::cout << "label: " << j << " is missing" << std::endl;
+	}
+#endif
         should(labels == labels_ref);
     }
 };
