@@ -400,7 +400,7 @@ class StridedScanOrderIterator
         return this->scanOrderIndex();
     }
     
-  protected:
+    //protected:
     StridedScanOrderIterator(base_type const & base) 
         : base_type(base)
     {}
