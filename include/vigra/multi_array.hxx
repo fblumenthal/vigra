@@ -617,8 +617,13 @@ struct NormTraits<MultiArray<N, T, A> >
 
 This class implements the interface of both MultiArray and
 MultiArrayView.  By default, MultiArrayViews are tagged as
-unstrided. If necessary, strided arrays are constructed automatically
-by calls to a variant of the bind...() function.
+strided (using <tt>StridedArrayTag</tt> as third template parameter). 
+This means that the array elements need not be consecutive in memory,
+making the view flexible to represent all kinds of subarrays and slices.
+In certain cases (which have become rare due to improvements of 
+optimizer and processor technology), an array may be tagged with 
+<tt>UnstridedArrayTag</tt> which indicates that the first array dimension
+is guaranteed to be unstrided, i.e. has consecutive elements in memory.
 
 In addition to the member functions described here, <tt>MultiArrayView</tt>
 and its subclasses support arithmetic and algebraic functions via the 
@@ -640,7 +645,7 @@ The template parameter are as follows
        memory location, strided if there is an offset in between (e.g.
        when a view is created that skips every other array element).
        The compiler can generate faster code for unstrided arrays.
-       Possible values: UnstridedArrayTag (default), StridedArrayTag
+       Possible values: StridedArrayTag (default), UnstridedArrayTag
 \endcode
 
 <b>\#include</b> \<vigra/multi_array.hxx\> <br/>
@@ -814,10 +819,7 @@ public:
             "MultiArrayView<..., UnstridedArrayTag>::MultiArrayView(): First dimension of given array is not unstrided.");
     }
     
-        /** Construct from shape, strides (offset of a sample to the
-            next) for every dimension, and pointer.  (Note that
-            strides are not given in bytes, but in offset steps of the
-            respective pointer type.)
+        /** Construct from an old-style BasicImage.
          */
     template <class ALLOC>
     MultiArrayView (BasicImage<T, ALLOC> const & image)
@@ -1306,7 +1308,6 @@ public:
     MultiArrayView <N-1, T, StridedArrayTag>
     bindAt (difference_type_1 m, difference_type_1 d) const;
     
-    
         /** Create a view to channel 'i' of a vector-like value type. Possible value types
             (of the original array) are: \ref TinyVector, \ref RGBValue, \ref FFTWComplex, 
             and <tt>std::complex</tt>. The list can be extended to any type whose memory
@@ -1382,6 +1383,19 @@ public:
          */
     MultiArrayView <N+1, T, StrideTag>
     insertSingletonDimension (difference_type_1 i) const;
+    
+        /** create a multiband view for this array.
+
+            The type <tt>MultiArrayView<N, Multiband<T> ></tt> tells VIGRA
+            algorithms which recognize the <tt>Multiband</tt> modifier to
+            interpret the outermost (last) dimension as a channel dimension. 
+            In effect, these algorithms will treat the data as a set of 
+            (N-1)-dimensional arrays instead of a single N-dimensional array.
+        */
+    MultiArrayView<N, Multiband<value_type>, StrideTag> multiband() const
+    {
+        return MultiArrayView<N, Multiband<value_type>, StrideTag>(*this);
+    }
 
         /** Create a view to the diagonal elements of the array.
         

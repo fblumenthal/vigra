@@ -1014,7 +1014,6 @@ template <class T, class C1, class C2, class C3>
 bool linearSolveUpperTriangular(const MultiArrayView<2, T, C1> &r, const MultiArrayView<2, T, C2> &b,
                                 MultiArrayView<2, T, C3> x)
 {
-    typedef MultiArrayShape<2>::type Shape;
     MultiArrayIndex m = rowCount(r);
     MultiArrayIndex rhsCount = columnCount(b);
     vigra_precondition(m == columnCount(r),
@@ -1112,7 +1111,7 @@ bool linearSolveLowerTriangular(const MultiArrayView<2, T, C1> &l, const MultiAr
      */
 template <class T, class C1, class C2, class C3>
 inline 
-void choleskySolve(MultiArrayView<2, T, C1> & L, MultiArrayView<2, T, C2> const & b, MultiArrayView<2, T, C3> & x)
+void choleskySolve(MultiArrayView<2, T, C1> const & L, MultiArrayView<2, T, C2> const & b, MultiArrayView<2, T, C3> & x)
 {
     /* Solve L * y = b */
     linearSolveLowerTriangular(L, b, x);
@@ -1197,9 +1196,6 @@ bool linearSolve(MultiArrayView<2, T, C1> const & A,
                  MultiArrayView<2, T, C3> res, 
                  std::string method = "QR")
 {
-    typedef typename Matrix<T>::difference_type Shape;
-    typedef typename Matrix<T>::view_type SubMatrix;
-    
     const MultiArrayIndex n = columnCount(A);
     const MultiArrayIndex m = rowCount(A);
 

@@ -292,7 +292,6 @@ class RandomForestOptions
     
     void make_from_map(map_type & in) // -> const: .operator[] -> .find
     {
-        typedef MultiArrayShape<2>::type Shp; 
         #define PULL(item_, type_) item_ = type_(in[#item_][0]); 
         #define PULLBOOL(item_, type_) item_ = type_(in[#item_][0] > 0); 
         PULL(training_set_proportion_,double);
@@ -317,7 +316,6 @@ class RandomForestOptions
     }
     void make_map(map_type & in) const
     {
-        typedef MultiArrayShape<2>::type Shp; 
         #define PUSH(item_, type_) in[#item_] = double_array(1, double(item_));
         #define PUSHFUNC(item_, type_) in[#item_] = double_array(1, double(item_!=0));
         PUSH(training_set_proportion_,double);
@@ -692,7 +690,7 @@ public:
 
     size_t serialized_size() const
     {
-        return 9 + class_count_ *int(is_weighted_+1);
+        return 10 + class_count_ *int(is_weighted_+1);
     }
 
 
@@ -700,14 +698,14 @@ public:
     void unserialize(Iter const & begin, Iter const & end)
     {
         Iter iter = begin;
-        vigra_precondition(end - begin >= 9, 
+        vigra_precondition(end - begin >= 10, 
                            "ProblemSpec::unserialize():"
                            "wrong number of parameters");
         #define PULL(item_, type_) item_ = type_(*iter); ++iter;
         PULL(column_count_,int);
         PULL(class_count_, int);
 
-        vigra_precondition(end - begin >= 9 + class_count_, 
+        vigra_precondition(end - begin >= 10 + class_count_, 
                            "ProblemSpec::unserialize(): 1");
         PULL(row_count_, int);
         PULL(actual_mtry_,int);
@@ -719,7 +717,7 @@ public:
         PULL(response_size_, int);
         if(is_weighted_)
         {
-            vigra_precondition(end - begin == 9 + 2*class_count_, 
+            vigra_precondition(end - begin == 10 + 2*class_count_, 
                                "ProblemSpec::unserialize(): 2");
             class_weights_.insert(class_weights_.end(),
                                   iter, 
@@ -764,7 +762,6 @@ public:
 
     void make_from_map(map_type & in) // -> const: .operator[] -> .find
     {
-        typedef MultiArrayShape<2>::type Shp; 
         #define PULL(item_, type_) item_ = type_(in[#item_][0]); 
         PULL(column_count_,int);
         PULL(class_count_, int);
@@ -781,7 +778,6 @@ public:
     }
     void make_map(map_type & in) const
     {
-        typedef MultiArrayShape<2>::type Shp; 
         #define PUSH(item_) in[#item_] = double_array(1, double(item_));
         PUSH(column_count_);
         PUSH(class_count_)
