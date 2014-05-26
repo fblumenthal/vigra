@@ -37,6 +37,7 @@ import sys
 import copy
 import numpy
 import ufunc
+import collections 
 import vigranumpycore
 
 from vigranumpycore import AxisType, AxisInfo, AxisTags
@@ -508,7 +509,7 @@ class VigraArray(numpy.ndarray):
     #                                                             #
     ###############################################################    
     
-    def writeImage(self, filename, dtype = '', compression = ''):
+    def writeImage(self, filename, dtype = '', compression = '', mode='w'):
         '''Write an image to a file. 
         Consult :func:`vigra.impex.writeImage` for detailed documentation'''
         import vigra.impex
@@ -519,7 +520,7 @@ class VigraArray(numpy.ndarray):
         if ndim != 2:
             raise RuntimeError("VigraArray.writeImage(): array must have 2 non-channel axes.")
 
-        vigra.impex.writeImage(self, filename, dtype, compression)
+        vigra.impex.writeImage(self, filename, dtype, compression, mode)
             
     def writeSlices(self, filename_base, filename_ext, dtype = '', compression = ''):
         '''Write a volume to a sequence of files.         
@@ -602,7 +603,7 @@ class VigraArray(numpy.ndarray):
         if ndim != 2:
             raise RuntimeError("VigraArray.show(): array must have 2 non-channel axes.")
 
-        return showImage(self, normalize)
+        return showImage(self.transposeToVigraOrder(), normalize)
 
     def qimage(self, normalize=True):
         '''
@@ -1132,6 +1133,8 @@ class VigraArray(numpy.ndarray):
         try:
             res = numpy.ndarray.__getitem__(self, index)
         except:
+            if not isinstance(index, collections.Iterable):
+                raise
             res = numpy.ndarray.__getitem__(self, 
                      map(lambda x: None if isinstance(x, AxisInfo) else x, index))
         if res is not self and hasattr(res, 'axistags'):

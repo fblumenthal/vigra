@@ -43,6 +43,7 @@
 #include "vigra/rgbvalue.hxx"
 #include "vigra/diff2d.hxx"
 #include "vigra/box.hxx"
+#include "vigra/algorithm.hxx"
 
 using namespace vigra;
 
@@ -179,9 +180,29 @@ struct TinyVectorTest
             should(!iv.any());
         }
 
+        IV seq = IV::linearSequence(), seq_ref;
+        linearSequence(seq_ref.begin(), seq_ref.end());
+        shouldEqual(seq, seq_ref);
+
+        seq = IV::linearSequence(2);
+        linearSequence(seq_ref.begin(), seq_ref.end(), 2);
+        shouldEqual(seq, seq_ref);
+
+        seq = IV::linearSequence(20, -1);
+        linearSequence(seq_ref.begin(), seq_ref.end(), 20, -1);
+        shouldEqual(seq, seq_ref);
+
         IV r = reverse(iv3);
         for(int k=0; k<SIZE; ++k)
             shouldEqual(iv3[k], r[SIZE-1-k]);
+
+        shouldEqual(transpose(r, IV::linearSequence(SIZE-1, -1)), iv3);
+
+        typedef TinyVector<typename FV::value_type, SIZE-1> FV1;
+        FV1 fv10(fv3.begin());
+        shouldEqual(fv10, fv3.dropIndex(SIZE-1));
+        FV1 fv11(fv3.begin()+1);
+        shouldEqual(fv11, fv3.dropIndex(0));
     }
 
     void testComparison()
@@ -199,6 +220,19 @@ struct TinyVectorTest
         should(iv3 == bv3);
         should(iv3 != fv3);
         should(fv3 != bv3);
+
+        should(bv0 < bv1);
+
+        should(allLess(bv0, bv1));
+        should(!allLess(bv1, bv3));
+        should(allGreater(bv1, bv0));
+        should(!allGreater(bv3, bv1));
+        should(allLessEqual(bv0, bv1));
+        should(allLessEqual(bv1, bv3));
+        should(!allLessEqual(bv3, bv1));
+        should(allGreaterEqual(bv1, bv0));
+        should(allGreaterEqual(bv3, bv1));
+        should(!allGreaterEqual(bv1, bv3));
 
         should(closeAtTolerance(fv3, fv3));
         
@@ -295,6 +329,10 @@ struct TinyVectorTest
         should(dot(bv, bv) == expectedSM2);
         should(bv.squaredMagnitude() == expectedSM2);
 
+        should(equalVector(bv0 + 1.0, fv1));
+        should(equalVector(1.0 + bv0, fv1));
+        should(equalVector(bv1 - 1.0, fv0));
+        should(equalVector(1.0 - bv1, fv0));
         should(equalVector(bv3 - iv3, bv0));
         should(equalVector(fv3 - fv3, fv0));
         BV bvp = (bv3 + bv3)*0.5;
@@ -319,7 +357,11 @@ struct TinyVectorTest
         should(equalIter(fvp.begin(), fvp.end(), fp));
         fvp = fv3 / 2.0;
         float fp1[] = {0.6f, 1.2f, 1.8f, 2.4f, 4.05f, 4.85f};
-        
+        should(equalIter(fvp.begin(), fvp.end(), fp1));
+        shouldEqual(2.0 / fv1, 2.0 * fv1);        
+        float fp2[] = {1.0f, 0.5f, 0.25f, 0.2f, 0.125f, 0.1f};
+        fvp = 1.0 / bv3;
+        should(equalIter(fvp.begin(), fvp.end(), fp2));
 
         int ivsq[] = { 1, 4, 16, 25, 64, 100 };
         ivp = iv3*iv3;
